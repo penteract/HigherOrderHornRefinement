@@ -14,13 +14,6 @@ import Data.Maybe (fromJust,isJust)
 data TokenType = Operator | Identifier | Number | NewLine deriving (Show,Eq)
 type Token = (String,TokenType,SourcePos)
 
-whitespace = " \t"
-
-
-ops :: [String]
-ops = ["+", "-", ">","<",">=","<=","=","¬","∨","⇒","⇔","∧","∀","∃"]
-
-
 --
 splitByStart :: [String] -> [(Char,[String])]
 splitByStart [] = []

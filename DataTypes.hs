@@ -1,11 +1,17 @@
-module DataTypes where
+module DataTypes(
+    Term(Variable,Constant,Apply,Lambda),Sort(Int,Bool,Arrow),Env,
+    printt,prnt,prints,
+    ilaOps,ilaRels,logicalBinary,
+    logicalConstants,logicalQuantifiers,logicalUnary,
+    logicalSymbols,
+    baseEnv,ilaEnv,getsort
+    )where
 
 import Data.Maybe(fromJust)
 
 data Sort = Arrow Sort Sort
           | Int | Bool
     deriving (Show,Eq)
-
 
 type Variable = String
 type Constant = String
@@ -26,6 +32,12 @@ prints :: Sort -> String
 prints (Arrow a b) = '(' : prints a++ "->" ++ prints b ++ ")"
 prints x = show x
 
+prns :: Bool -> Sort -> String
+prns _ Int = "Int"
+prns _ Bool = "Bool"
+prns True x = parise $prns False x
+prns False (Arrow a b) = prns True a++"->"++prns False b
+
 prnt :: Term -> String
 prnt t = prnt' 0 0 t
 
@@ -44,10 +56,10 @@ prnt' lp rp (Apply (Constant c) t)
                                       else c++prnt' p rp t)
     | c `elem` logicalQuantifiers = case t of
         (Lambda a s body) -> (if rp==0 then id else parise) $
-                                (c++a++":"++prints s++"."++prnt' 0 0 body)
+                                (c++a++":"++prns False s++"."++prnt' 0 0 body)
         _ -> error "bad quantifier"
 prnt' lp rp (Lambda a s body)  = (if rp==0 then id else parise) $
-                                ("λ"++a++":"++prints s++"."++prnt' 0 0 body)
+                                ("λ"++a++":"++prns False s++"."++prnt' 0 0 body)
 prnt' lp rp (Variable v)  = v
 prnt' lp rp (Constant c)  = c
 prnt' lp rp (Apply a b)  = if maxPrec<=lp 

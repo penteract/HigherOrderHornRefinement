@@ -88,9 +88,8 @@ formula = quantified
       <|> opPrecl (map return logicalBinary) negation
       <?> "formula"
 
-test2 = "Af:Int->(Int->Int).Eg:Int->Int.¬ En:Int.f n = g"
 negation = (tok "¬" >> (quantified <|> negation) >>= return.(Apply (Constant "¬")))
-       <|> opPrecl [ilaOps,ilaRels] simpleFormula
+       <|> opPrecl [ilaRels,ilaOps] simpleFormula
 
 
 quantified :: MyParser Term
@@ -123,9 +122,6 @@ sort = chainr1 ((tok "Int" >> return Int) <|> (tok "Bool" >> return Bool) <|> pa
 
 --functions to help display the result of the parser
 
--- Example string: "∀cabr. Row FullAdder c a b r ⇒ RipCarry c a b r"
--- ∀f:Int->Int->Bool. ∃x:Int. ¬(n ≤ 0) ∧ Iter f x (n − 1) r ∧ f m x ⇒ Iter f m n r
-tests = "∀r:Int.∀n:Int.∀m:Int.∀Iter:(Int->Int->Bool)->Int->Int->Int->Bool.∀f:Int->Int->Bool. ∃x:Int. ¬(n <= 0) ∧ Iter f x (n - 1) r ∧ f m x ⇒ Iter f m n r"
 
 
 fromRight :: Either a b -> b
@@ -144,18 +140,11 @@ fromParse (Right x) =  x
 fromParse2 (Left x) = Left $ show x
 fromParse2 (Right x) =  Right x
 
-fp (Left x) = Left $ show x
-fp (Right x)  = (Right x)
-
 qshow s = putStrLn $ fromEither (tknsr2 s >>= (\ x->return $ fromParse (
             runParser parser () "" x >>= return.concat.map (++"\n").map prnt)))
 
 runp s=  tknsr2 s >>= fromParse2. runParser parser () ""            
 
 
-test3 = "y = x + 1 ⇒ Succ x y\n"++
-    "n ≤ 0 ∧ r = m ⇒ Iter f m n r\n"++
-    "∃x:Int. ¬(n ≤ 0) ∧ Iter f x (n − 1 ) r ∧ f m x ⇒ Iter f m n r\n"
-test4 = "Ax:Int.Ay:Int.y = x + 1 ⇒ Succ x y\n"++
-    "An:Int.Am:Int.Af:Int->Int->Bool.n ≤ 0 ∧ r = m ⇒ Iter f m n r\n"++
-    "∃x:Int. ¬(n ≤ 0) ∧ Iter f x (n − 1 ) r ∧ f m x ⇒ Iter f m n r\n"
+qt s = fromRight $ (runParser parser () "" (fromRight $ tknsr2 s))
+qs s = fromRight $ (runParser sort () "" (fromRight $ tknsr2 s))

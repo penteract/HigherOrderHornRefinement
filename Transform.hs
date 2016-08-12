@@ -1,4 +1,5 @@
-module Transform where
+module Transform(transform,checkHorn)
+    where
 
 import DataTypes
 import Data.Maybe(fromJust)
@@ -24,5 +25,9 @@ vlist' vs (Apply a (Variable v)) = vlist' (v:vs) a
 
 slist :: Sort -> ([Sort],Sort)
 slist Bool = ([],Bool)
-slist (Arrow a b) = (a:as,b)
-    where (as,b) = slist b
+slist (Arrow a b) = (a:as,x)
+    where (as,x) = slist b
+
+    
+checkHorn :: Env -> [Term] -> [(String,Term)]
+checkHorn e = map (transform e)
