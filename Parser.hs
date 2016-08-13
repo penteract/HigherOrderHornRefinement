@@ -21,6 +21,16 @@ cannonicals :: [(String,String)]
 cannonicals = [ ("^","∧"), ("=>","⇒"), ("\\","λ"),("A","∀"),("E","∃"),("≤","<="),
     ("−","-"),("→","->"),("\\/","∨")]
 
+--get rid of unicode
+legiblise "" _ _ = ""
+legiblise (c:s) [] l = c:legiblise s l l
+legiblise s ((x,y):xs) l = if start == y then x ++ legiblise end l l else legiblise s xs l
+    where (start,end)= splitAt (length y) s
+
+ll= [ ("^","∧"), ("=>","⇒"), ("\\","λ"),("A","∀"),("E","∃"), ("\\/","∨")]
+
+lgb s= legiblise s ll ll
+
 --Parser    
 
 --setup 
@@ -28,7 +38,7 @@ cannonicals = [ ("^","∧"), ("=>","⇒"), ("\\","λ"),("A","∀"),("E","∃"),(
 typeSymbols = ["->"]
 
 symbols :: [String]
-symbols = logicalSymbols ++ ilaOps ++ ilaRels++ typeSymbols ++["(",")",":","."] ++ map fst cannonicals
+symbols = logicalSymbols ++ ilaOps ++ ilaRels++ typeSymbols ++["(",")",":",".",","] ++ map fst cannonicals
 
 cannonise :: Token -> Token
 cannonise (x,Operator,pos) = (fromMaybe x (lookup x cannonicals),Operator,pos)
@@ -94,13 +104,27 @@ negation = (tok "¬" >> (quantified <|> negation) >>= return.(Apply (Constant "�
 
 quantified :: MyParser Term
 quantified = do q <- oneOf logicalQuantifiers
-                Variable v <- variable
-                tok ":"
-                t <- sort
-                tok "."
+                tvs <- tvlist
                 body <- formula
-                return $ (if q=="λ" then id else Apply (Constant q))
-                    (Lambda v t body)
+                return $ fromtvlist q tvs body
+
+tvlist :: MyParser [(Sort,Term)]
+tvlist = do x<-chainl1
+                (do vs<-vlist 
+                    (tok ":")
+                    s<-sort
+                    return $ map ((,) s) vs)
+              (tok ",">>return (++))
+            tok "."
+            return x
+
+fromtvlist :: String -> [(Sort,Term)] -> Term -> Term
+fromtvlist _ [] body = body
+fromtvlist q ((s,Variable v):tvs) body = (if q=="λ" then id else Apply (Constant q))
+                    (Lambda v s (fromtvlist q tvs body))
+
+vlist :: MyParser [Term]
+vlist = chainl1 (variable >>= return.return) (tok "," >> return (++))
 
 simpleFormula :: MyParser Term
 simpleFormula = (many1 simpleTerm >>= return . foldl1 Apply)
@@ -142,6 +166,10 @@ fromParse2 (Right x) =  Right x
 
 qshow s = putStrLn $ fromEither (tknsr2 s >>= (\ x->return $ fromParse (
             runParser parser () "" x >>= return.concat.map (++"\n").map prnt)))
+qshowl s = putStrLn $ lgb $ fromEither (tknsr2 s >>= (\ x->return $ fromParse (
+            runParser parser () "" x >>= return.concat.map (++"\n").map prnt)))
+qshowl2 s = putStrLn $ lgb $ fromEither (tknsr2 s >>= (\ x->return $ fromParse (
+            runParser parser () "" x >>= return.concat.map (++"\n").map printt)))
 
 runp s=  tknsr2 s >>= fromParse2. runParser parser () ""            
 
