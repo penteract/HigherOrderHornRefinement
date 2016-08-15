@@ -3,6 +3,7 @@ module Tests where
 import Parser
 import DataTypes
 import Transform
+import FormulaChecks
 
 tests = "∀r:Int.∀n:Int.∀m:Int.∀Iter:(Int->Int->Bool)->Int->Int->Int->Bool.∀f:Int->Int->Bool. ∃x:Int. ¬(n <= 0) ∧ Iter f x (n - 1) r ∧ f m x ⇒ Iter f m n r"
 
@@ -24,8 +25,8 @@ tstEnv = [("Iter",qs "(Int->Int->Bool)->Int->Int->Int->Bool"),
 main :: IO ()
 main = putStrLn.lgb $ unlines $ map fromEither  results
     where 
-        results = (map ((>>=return.const"pass.").runp) [tests,test2,test3,test4,test5] ++
-            [runp tests>>=getsort.head>>=return.const "pass."] ++
+        results = (map ((>>return"pass.").runp) [tests,test2,test3,test4,test5] ++
+            [runp tests>>=getsort.head>>return "pass."] ++
             [runp test3>>=return.unlines.map (\(s,body) ->s++":="++prnt body).checkHorn tstEnv])
     
 --At the moment just checks that things parse, not actually what they parse into
