@@ -3,7 +3,7 @@ module FormulaChecks
 
 import DataTypes
 
-getSort :: String -> Maybe Sort -> Env -> Either String Sort
+getSort :: String -> Maybe Sort -> DeltaEnv -> Either String Sort
 getSort "∀" (Just (Arrow sigma Bool)) env = Right $ Arrow (Arrow sigma Bool) Bool
 getSort "∀" _ env =  Left "body of quantifier should be boolean"
 getSort "∃" (Just (Arrow sigma Bool)) env = Right $ Arrow (Arrow sigma Bool) Bool
@@ -24,7 +24,7 @@ isRelational _ = False
 getsort :: Term -> Either String Sort
 getsort = getsort' ilaEnv Nothing
 
-getsort' :: Env -> Maybe Sort -> Term -> Either String Sort
+getsort' :: DeltaEnv -> Maybe Sort -> Term -> Either String Sort
 getsort' env _ (Apply a b) = do 
     sb <- getsort' env Nothing b
     sa <- getsort' env (Just sb) a
@@ -41,9 +41,23 @@ getsort' env _ (Variable x) = case lookup x env of
                                    Nothing -> Left ("unknown variable:"++x)
                                    Just s -> Right s
 getsort' env hint (Constant c) =  getSort c hint env
- 
+
+isInt :: Term -> Bool
+isInt (Apply (Apply (Constant c) a) b)
+    | c `elem` ilaOps = isInt a && isInt b
+isInt (Variable v) = True
+isInt (Constant c)
+    | c `elem` ilaConstants = True
+isInt _ = False
+    
+
 isIla :: Term -> Bool
-isIla =error ""
+isIla (Apply (Constant c) a)
+    | c `elem` logicalUnary = isIla a
+isIla (Apply (Apply (Constant c) a) b)
+    | c `elem` logicalBinary = isIla a && isIla b
+    | c `elem` ilaRels = isInt a && isInt b
+isIla _ = False
 
 isGoal :: Term -> Maybe String --Nothing means goal, string is error
-isGoal =error ""
+isGoal = error ""

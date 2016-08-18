@@ -140,7 +140,7 @@ number = testTok (\ (_,t,_) ->t==Number) >>= return.numToTerm.read
 variable = testTok (\ (_,t,_) ->t==Identifier) >>= return.Variable
 
 sort :: MyParser Sort
-sort = chainr1 ((tok "Int" >> return Int) <|> (tok "Bool" >> return Bool) <|> parens sort)
+sort = chainr1 ((tok "int" >> return Int) <|> (tok "bool" >> return Bool) <|> parens sort)
                 (tok "->" >> return Arrow)
 
 
@@ -171,7 +171,9 @@ qshowl s = putStrLn $ lgb $ fromEither (tknsr2 s >>= (\ x->return $ fromParse (
 qshowl2 s = putStrLn $ lgb $ fromEither (tknsr2 s >>= (\ x->return $ fromParse (
             runParser parser () "" x >>= return.concat.map (++"\n").map printt)))
 
-runp s=  tknsr2 s >>= fromParse2. runParser parser () ""            
+qp = fromRight . runParser formula () "" . fromRight.tknsr2
+            
+runp s=  tknsr2 s >>= fromParse2. runParser parser () "" 
 
 
 qt s = fromRight $ (runParser parser () "" (fromRight $ tknsr2 s))

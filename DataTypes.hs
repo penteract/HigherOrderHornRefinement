@@ -1,17 +1,30 @@
 module DataTypes(
-    Term(Variable,Constant,Apply,Lambda),Sort(Int,Bool,Arrow),Env,
-    printt,prnt,prints,
-    ilaOps,ilaRels,logicalBinary,
-    logicalConstants,logicalQuantifiers,logicalUnary,
+    Term(Variable,Constant,Apply,Lambda),Sort(Int,Bool,Arrow),DeltaEnv,
+    MonoType(ArrowT,IntT,BoolT),Scheme,Gamma,
+    printt,prnt,prints,prnty,prnsch,
+    ilaConstants,ilaOps,ilaRels,
+    logicalBinary,logicalConstants,
+    logicalQuantifiers,logicalUnary,
     logicalSymbols,
     baseEnv,ilaEnv
     )where
 
 import Data.Maybe(fromJust)
+import Data.List
 
 data Sort = Arrow Sort Sort
           | Int | Bool
     deriving (Show,Eq)
+    
+data MonoType = ArrowT Variable MonoType MonoType
+          | IntT | BoolT Term 
+    deriving (Eq)
+    
+type Scheme = ([(Variable,Sort)],MonoType)
+
+instance Show MonoType where
+    show t = prnty t
+
 
 type Variable = String
 type Constant = String
@@ -33,8 +46,8 @@ prints (Arrow a b) = '(' : prints a++ "->" ++ prints b ++ ")"
 prints x = show x
 
 prns :: Bool -> Sort -> String
-prns _ Int = "Int"
-prns _ Bool = "Bool"
+prns _ Int = "int"
+prns _ Bool = "bool"
 prns True x = parise $prns False x
 prns False (Arrow a b) = prns True a++"->"++prns False b
 
@@ -66,6 +79,22 @@ prnt' lp rp (Apply a b)  = if maxPrec<=lp
                               then parise (prnt' 0 maxPrec a ++ " " ++prnt' maxPrec 0 b)
                               else  prnt' lp maxPrec a ++ " " ++prnt' maxPrec rp b
 
+                              
+prnsch :: Scheme -> String
+prnsch ([],t) = prnty t
+prnsch (ss,t) = "A "++intercalate " " (map (\(x,y)->x++":"++prns False y) ss) ++ "." ++ prnty t
+
+prnty :: MonoType -> String
+prnty = prnty' False
+
+prnty' _ IntT = "int"
+prnty' _ (BoolT s) = "bool["++prnt s++"]"
+prnty' b (ArrowT "_" t1 t2) =
+    (if b then parise else id) (prnty' True t1 ++ "->" ++ prnty' False t2)
+prnty' b (ArrowT x t1 t2) =
+    (if b then parise else id) (x++":"++prnty' True t1 ++ "->" ++ prnty' False t2)
+
+
 
 logicalConstants = ["true","false"]--not used at the moment
 
@@ -74,6 +103,7 @@ logicalBinary = ["⇒","∨","∧","⇔"]
 logicalQuantifiers = ["∀","∃","λ"]
 logicalSymbols = logicalUnary ++ logicalBinary ++ logicalQuantifiers
 
+ilaConstants = ["0","1"]
 ilaOps = ["+","-"]
 ilaRels = [">=","<=",">","<", "="]
 
@@ -83,16 +113,23 @@ opsByPrec = map return logicalBinary ++ [logicalUnary,ilaRels,ilaOps]
 getprec = getprec' 1 opsByPrec
 getprec' n [] = []
 getprec' n (ops:rest) = map (flip (,) n) ops ++ getprec' (n+1) rest
-
+getprec2 = foldl (++) [] (map (uncurry $ map. flip (,)) (zip [1..] opsByPrec))
 maxPrec = length opsByPrec + 1
 
-type Env = [(Variable,Sort)]
+type DeltaEnv = [(Variable,Sort)]
+type Gamma = [(Variable,Scheme)]
             
 baseEnv = zip logicalBinary (repeat (Arrow Bool . Arrow Bool $ Bool)) ++
           zip logicalUnary (repeat (Arrow Bool Bool)) ++
           zip logicalConstants (repeat Bool)
 
-ilaEnv :: Env
+ilaEnv :: DeltaEnv
 ilaEnv = zip ilaOps (repeat (Arrow Int . Arrow Int $ Int)) ++
          zip ilaRels (repeat (Arrow Int . Arrow Int $ Bool)) ++
-         [("0",Int), ("1",Int)] ++ baseEnv
+         zip ilaConstants (repeat Int) ++
+         baseEnv
+
+flat :: MonoType -> Sort
+flat (ArrowT _ a b) = Arrow (flat a) (flat b)
+flat IntT = Int
+flat (BoolT _) = Bool

@@ -5,7 +5,7 @@ import DataTypes
 import Data.Maybe(fromJust)
 
 
-transform :: Env -> Term -> (String,Term)
+transform :: DeltaEnv -> Term -> (String,Term)
 transform e (Apply (Apply (Constant "⇒") a) b) =
     if length vs /= length ss 
        then error "we have a problem"
@@ -29,5 +29,5 @@ slist (Arrow a b) = (a:as,x)
     where (as,x) = slist b
 
     
-checkHorn :: Env -> [Term] -> [(String,Term)]
+checkHorn :: DeltaEnv -> [Term] -> [(String,Term)]
 checkHorn e = map (transform e)

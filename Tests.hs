@@ -5,22 +5,22 @@ import DataTypes
 import Transform
 import FormulaChecks
 
-tests = "∀r:Int.∀n:Int.∀m:Int.∀Iter:(Int->Int->Bool)->Int->Int->Int->Bool.∀f:Int->Int->Bool. ∃x:Int. ¬(n <= 0) ∧ Iter f x (n - 1) r ∧ f m x ⇒ Iter f m n r"
+tests = "∀r:int.∀n:int.∀m:int.∀Iter:(int->int->Bool)->int->int->int->Bool.∀f:int->int->Bool. ∃x:int. ¬(n <= 0) ∧ Iter f x (n - 1) r ∧ f m x ⇒ Iter f m n r"
 
 
-test2 = "Af:Int->(Int->Int).Eg:Int->Int.¬ En:Int.f n = g"
+test2 = "Af:int->(int->int).Eg:int->int.¬ En:int.f n = g"
 
 test3 = "y = x + 1 ⇒ Succ x y\n"++
     "n ≤ 0 ∧ r = m ⇒ Iter f m n r\n"++
-    "(∃x:Int. ¬(n ≤ 0) ∧ Iter f x (n − 1 ) r ∧ f m x )⇒ Iter f m n r\n"
-test4 = "Ax:Int.Ay:Int.y = x + 1 ⇒ Succ x y\n"++
-    "An:Int.Am:Int.Af:Int->Int->Bool.n ≤ 0 ∧ r = m ⇒ Iter f m n r\n"++
-    "∃x:Int. ¬(n ≤ 0) ∧ Iter f x (n − 1 ) r ∧ f m x ⇒ Iter f m n r\n"
-test5 = "Ax,y:Int,somefunction:Int->Int.Ea,b:Int.x=somefuntion a^y=somefunction b"
+    "(∃x:int. ¬(n ≤ 0) ∧ Iter f x (n − 1 ) r ∧ f m x )⇒ Iter f m n r\n"
+test4 = "Ax:int.Ay:int.y = x + 1 ⇒ Succ x y\n"++
+    "An:int.Am:int.Af:int->int->Bool.n ≤ 0 ∧ r = m ⇒ Iter f m n r\n"++
+    "∃x:int. ¬(n ≤ 0) ∧ Iter f x (n − 1 ) r ∧ f m x ⇒ Iter f m n r\n"
+test5 = "Ax,y:int,somefunction:int->int.Ea,b:int.x=somefuntion a^y=somefunction b"
     
     
-tstEnv = [("Iter",qs "(Int->Int->Bool)->Int->Int->Int->Bool"),
-    ("Succ",qs "Int->Int->Bool")]
+tstEnv = [("Iter",qs "(int->int->Bool)->int->int->int->Bool"),
+    ("Succ",qs "int->int->Bool")]
     
 main :: IO ()
 main = putStrLn.lgb $ unlines $ map fromEither  results
