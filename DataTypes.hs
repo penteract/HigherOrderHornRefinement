@@ -1,6 +1,6 @@
 module DataTypes(
     Term(Variable,Constant,Apply,Lambda),Sort(Int,Bool,Arrow),DeltaEnv,
-    MonoType(ArrowT,IntT,BoolT),Scheme,Gamma,
+    MonoType(ArrowT,IntT,BoolT),Scheme,Gamma,flat
     printt,prnt,prints,prnty,prnsch,
     ilaConstants,ilaOps,ilaRels,
     logicalBinary,logicalConstants,
@@ -34,6 +34,8 @@ data Term = Variable Variable
           | Lambda Variable Sort Term
           deriving (Show,Eq)
 
+type DeltaEnv = [(Variable,Sort)]
+type Gamma = [(Variable,Scheme)]
 
 printt :: Term -> String
 printt (Variable v) = v
@@ -116,8 +118,6 @@ getprec' n (ops:rest) = map (flip (,) n) ops ++ getprec' (n+1) rest
 getprec2 = foldl (++) [] (map (uncurry $ map. flip (,)) (zip [1..] opsByPrec))
 maxPrec = length opsByPrec + 1
 
-type DeltaEnv = [(Variable,Sort)]
-type Gamma = [(Variable,Scheme)]
             
 baseEnv = zip logicalBinary (repeat (Arrow Bool . Arrow Bool $ Bool)) ++
           zip logicalUnary (repeat (Arrow Bool Bool)) ++

@@ -27,7 +27,7 @@ legiblise (c:s) [] l = c:legiblise s l l
 legiblise s ((x,y):xs) l = if start == y then x ++ legiblise end l l else legiblise s xs l
     where (start,end)= splitAt (length y) s
 
-ll= [ ("^","∧"), ("=>","⇒"), ("\\","λ"),("A","∀"),("E","∃"), ("\\/","∨")]
+ll= [ ("^","∧"), ("=>","⇒"), ("\\","λ"),("A","∀"),("E","∃"), ("\\/","∨"),("<=>","⇔")]
 
 lgb s= legiblise s ll ll
 
