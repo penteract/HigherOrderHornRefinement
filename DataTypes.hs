@@ -1,12 +1,14 @@
 module DataTypes(
     Term(Variable,Constant,Apply,Lambda),Sort(Int,Bool,Arrow),DeltaEnv,
-    MonoType(ArrowT,IntT,BoolT),Scheme,Gamma,flat
+    MonoType(ArrowT,IntT,BoolT),Scheme,Gamma,flat,
+    Variable,Constant,
     printt,prnt,prints,prnty,prnsch,
     ilaConstants,ilaOps,ilaRels,
     logicalBinary,logicalConstants,
     logicalQuantifiers,logicalUnary,
     logicalSymbols,
-    baseEnv,ilaEnv
+    baseEnv,ilaEnv,
+    simp,simplify,printLong
     )where
 
 import Data.Maybe(fromJust)
@@ -14,7 +16,10 @@ import Data.List
 
 data Sort = Arrow Sort Sort
           | Int | Bool
-    deriving (Show,Eq)
+    deriving (Eq)
+    
+instance Show Sort where
+    show = prns False
     
 data MonoType = ArrowT Variable MonoType MonoType
           | IntT | BoolT Term 
@@ -32,7 +37,10 @@ data Term = Variable Variable
           | Constant Constant
           | Apply Term Term
           | Lambda Variable Sort Term
-          deriving (Show,Eq)
+          deriving (Eq)
+          
+instance Show Term where
+    show = prnt
 
 type DeltaEnv = [(Variable,Sort)]
 type Gamma = [(Variable,Scheme)]
@@ -62,8 +70,8 @@ parise s = "("++s++")"
 prnt' :: Int -> Int -> Term -> String
 prnt' lp rp (Apply (Apply (Constant c) t1) t2)
     | c `elem` binaryOps = if p<=lp || p<rp 
-                              then parise (prnt' 0 p t1++c++prnt' p 0 t2)
-                              else (prnt' lp p t1++c++prnt' p rp t2)
+                              then parise (prnt' 0 p t1++" "++c++" "++prnt' p 0 t2)
+                              else (prnt' lp p t1++" "++c++" "++prnt' p rp t2)
         where p = fromJust $ lookup c getprec 
 prnt' lp rp (Apply (Constant c) t) 
     | c `elem` logicalUnary = (let p=fromJust $ lookup c getprec in
@@ -96,14 +104,23 @@ prnty' b (ArrowT "_" t1 t2) =
 prnty' b (ArrowT x t1 t2) =
     (if b then parise else id) (x++":"++prnty' True t1 ++ "->" ++ prnty' False t2)
 
+simplify :: Term -> Term
+simplify (Apply (Apply (Constant "∧") (Constant "true")) t) = simplify t
+simplify (Apply (Apply (Constant "∧") t) (Constant "true")) = simplify t
+simplify (Apply (Apply (Constant "⇒") (Constant "true")) t) = simplify t
+simplify (Apply t1 t2) = Apply (simplify t1) (simplify t2)
+simplify (Lambda x s t) = Lambda x s (simplify t)
+simplify t = t
 
+simp t = simp' t (simplify t) --K simp' simplify
+simp' t t'= if t==t' then t else simp t'
 
-logicalConstants = ["true","false"]--not used at the moment
+logicalConstants = ["true","false"]
 
 logicalUnary = ["¬"]
 logicalBinary = ["⇒","∨","∧","⇔"]
 logicalQuantifiers = ["∀","∃","λ"]
-logicalSymbols = logicalUnary ++ logicalBinary ++ logicalQuantifiers
+logicalSymbols = logicalUnary ++ logicalBinary ++ logicalQuantifiers ++ logicalConstants
 
 ilaConstants = ["0","1"]
 ilaOps = ["+","-"]
@@ -133,3 +150,9 @@ flat :: MonoType -> Sort
 flat (ArrowT _ a b) = Arrow (flat a) (flat b)
 flat IntT = Int
 flat (BoolT _) = Bool
+
+
+printLong :: Term -> String --assumes ∀ is implied and prints conjunctive terms on separate lines
+printLong (Apply (Apply (Constant "∧") t1) t2) = printLong t1 ++ '\n':printLong t2
+printLong (Apply (Constant "∀") (Lambda x s t)) = printLong t
+printLong x = prnt x

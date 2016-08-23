@@ -36,6 +36,7 @@ maketreeh current ss =  Tree (map (\ (c,xs)-> (c,maketreeh (c:current) xs)) (spl
                
 -- get the longest match
 getFromTree :: Tree -> String -> Maybe (String,String)
+getFromTree (Tree ts mx) "" = mx>>=(\x->Just (x,""))
 getFromTree (Tree ts mx) s = (lookup (head s) ts >>= (\t -> getFromTree t (tail s))) 
             <|> (mx >>= (\x->Just (x,s)))
 

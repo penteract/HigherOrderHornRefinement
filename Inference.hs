@@ -4,7 +4,7 @@ module Inference
 import DataTypes
 import Parser
 import Data.List(lookup)
-import Data.Maybe(fromJust)
+import Data.Maybe(fromJust,fromMaybe)
 import Data.Char(isDigit)
 
 (%) :: String -> [String] -> String
@@ -32,7 +32,7 @@ ilaGamma =
     ArrowT "_" (ArrowT "x" IntT (BoolT $ qp "X x") ) (BoolT $ qp "∃x:int.X x")))]
 
 
-getTyOfConst :: Const -> Scheme
+getTyOfConst :: Constant -> Scheme
 getTyOfConst c
     | c `elem` ilaOps = ([],(ArrowT "_" IntT (ArrowT "_" IntT IntT)))
     | c `elem` ilaRels = ([],ArrowT "x" IntT . ArrowT "y" IntT $ BoolT (qp ("x {} y"%[c])))
@@ -41,38 +41,52 @@ getTyOfConst c
          ArrowT "_" (BoolT (qp "X")).ArrowT "_" (BoolT (qp "Y")) $ BoolT (qp ("X {} Y"%[c])))
     | c `elem` logicalUnary =
         ([("X",Bool)],
-         ArrowT "_" (BoolT (qp "Y")) $ BoolT (qp ("{} X"%[c])))
+         ArrowT "_" (BoolT (qp "X")) $ BoolT (qp ("{} X"%[c])))
+    | c `elem` logicalQuantifiers = -- what if it's not quantifying over ints?
+        ([("X",Bool)],
+            ArrowT "_" (ArrowT "x" IntT (BoolT $ qp "X x") ) (BoolT $ qp ("{} x:int.X x"%[c])))
     | all isDigit c = ([],IntT)
     
 replaceInMT :: [(Variable,Term)] -> MonoType -> MonoType
 replaceInMT rs IntT = IntT
 replaceInMT rs (BoolT t) = BoolT (replaceInTerm rs t)
 replaceInMT rs (ArrowT x t1 t2) = ArrowT x (replaceInMT rs t1) (replaceInMT rs_ t2)
-    where rs_ = filter (\(a,b) -> a!=x) rs
+    where rs_ = filter (\(a,b) -> a/=x) rs
 
 replaceInTerm :: [(Variable,Term)] -> Term -> Term
-replaceInTerm rs (Apply t1 t2) = Arrow (replaceInTerm rs t1) (replaceInTerm r2 t2)
-replaceInTerm rs (Lambda x s t) = Lambda x s (replaceInTerm (filter (\(a,b) -> a!=x) rs) t)
+replaceInTerm rs (Apply t1 t2) = Apply (replaceInTerm rs t1) (replaceInTerm rs t2)
+replaceInTerm rs (Lambda x s t) = Lambda x s (replaceInTerm (filter (\(a,b) -> a/=x) rs) t)
 replaceInTerm rs (Variable v) = fromMaybe (Variable v) (lookup v rs)
 replaceInTerm rs (Constant c) = (Constant c)
 
 
-type Mfresh a = DeltaEnv -> (a,Int)
+newtype Mfresh a = Mfresh {fromM :: (Int -> (a,Int))}
 
 instance Monad Mfresh where
-    return x n = (x,n)
+    return x = Mfresh (\n->(x,n))
     --(>>=) xm f n = let (x,m) = xm n in f x m 
     --    uncurry f (xm n)--uncurry f.xm --flip (.) xm . uncurry-- flip (.) uncurry . flip (.)
-    (>>=) = flip (.) uncurry . flip (.) -- I had to --(. uncurry) . flip (.)
+    --    uncurry f (xm n)
+    (>>=) (Mfresh xm) f = Mfresh (\n->let (x,m) = xm n in fromM (f x) m)
+    -- Mfresh $ uncurry (fromM.f) . fromM xm
+    -- Mfresh . flip (.) (fromM xm).uncurry.fromM
+    -- (Mfresh . flip (.) (fromM xm)).(uncurry.fromM)
+    -- flip (.) (uncurry.fromM) (Mfresh . flip (.) (fromM xm))
+    -- flip (.) (uncurry.fromM) ((Mfresh . flip (.) . fromM) xm)
+    -- flip (.) (uncurry.fromM) . Mfresh . flip (.) . fromM
+    
+    --(>>=) = flip (.) uncurry . flip (.) 
 
 freshVar :: Mfresh Variable
-freshVar n = ("_x"++show n,n+1)
+freshVar = Mfresh freshVar'
+freshVar' n = ("x_"++show n,n+1)
     
 freshRel :: DeltaEnv -> Sort -> Mfresh (Term,(Variable,Sort))
-freshRel d rho n = ((foldl (\ t y -> Apply t (Variable y)) (Variable x) ys,
-                    (x,iterate (Arrow Int) rho !! length xs)),n+1)
+freshRel d rho = do
+    x<-freshVar
+    return (foldl (\ t y -> Apply t (Variable y)) (Variable x) ys,
+                    (x,iterate (Arrow Int) rho !! length ys))
     where ys = map fst $ filter ((==Int).snd) d
-          x = "_x" ++ show n
 
 freshTy :: DeltaEnv -> Sort -> Mfresh (MonoType,DeltaEnv)
 freshTy d Bool = do (t,d) <- freshRel d Bool
@@ -80,45 +94,55 @@ freshTy d Bool = do (t,d) <- freshRel d Bool
 freshTy d Int = return (IntT,[])
 freshTy d (Arrow Int s) = do
     z <- freshVar
-    freshTy ((z,Int):d) s
+    (ty,ds)<-freshTy ((z,Int):d) s
+    return $ (ArrowT z IntT ty ,ds)
 freshTy d (Arrow s1 s2) = do
     (ty1,d1) <- freshTy d s1
     (ty2,d2) <- freshTy d s2
     return (ArrowT "_" ty1 ty2,d2++d1)
 
 
-
-infer :: Gamma -> Term -> (DeltaEnv,Term,MonoType)
-infer g (Variable v) = (ds,qp "true",replaceInMT (zip vs ts) ty)--(IVar)
+infer :: Gamma -> Term -> Mfresh (DeltaEnv,Term,MonoType)
+infer g (Variable v) = do
+    (ts,ds) <- sequence (map (freshRel (flatenv g)) ss) >>= return.unzip
+    return (ds,Constant "true",replaceInMT (zip vs ts) ty)--(IVar)
     where 
-        (targs,ty) = fromJust$lookup v g
+        (targs,ty) = case lookup v g of
+                          Just x -> x
+                          Nothing -> error (v++" not found")
         (vs,ss) = unzip targs
-        (ts,ds) = unzip.map freshRel $ ss
-infer g (Constant c) = (ds,qp "true",replaceInMT (zip vs ts) ty)--(IConst)
+infer g (Constant c) = do
+    (ts,ds) <- sequence (map (freshRel (flatenv g)) ss) >>= return.unzip
+    return (ds,Constant "true",replaceInMT (zip vs ts) ty)--(IConst)
     where 
-        (targs,ty) = getTyOfConst c g
+        (targs,ty) = getTyOfConst c
         (vs,ss) = unzip targs
-        (ts,ds) = unzip.map freshRel $ ss
-infer g (Apply t1 t2) = (d1,replaceInTerm [("X",c1),("Y",c2),("Z",c3)] (qp "X^Y^Z"),replaceInMT [(x,t2)] ty) --(IApp)
-    where 
-        (d1,c1,(ArrowT x ty1 ty)) = infer g t1
-        (d2,c2,ty2) = infer ((x,t1):g) t1
-        c3 = inferSub ty2 ty1
-infer g (Lambda x Int t) = (d1,replaceInTerm [("X",c)] (qp ("A {}:int.X"%[x])),ArrowT x IntT ty)--(IProd)
-    where 
-        (d1,c,ty) = infer (("x",([],IntT)):g) t
-infer g (Lambda x s t) = (d2++d1,c,ArrowT "_" ty1 ty2) --(IArrow)
-    where 
-        (d1,ty1) = freshTy (flatenv (\(a,b)->(a,flat $ snd b)) g)
-        (d2,c,ty2) = infer ((x,([],ty1)):g) t
+infer g (Apply t1 t2) = do
+    aaa <- infer g t1
+    (d1,c1,x,ty1,ty) <- return (case aaa of
+              (d1,c1,(ArrowT x ty1 ty))->(d1,c1,x,ty1,ty)
+              _ -> error (show aaa ++show t1 ++ show t2++";"++show g)
+              )
+    (d2,c2,ty2) <- infer g t2
+    c3 <- inferSub ty2 ty1
+    return (d1,replaceInTerm [("X",c1),("Y",c2),("Z",c3)] (qp "X^Y^Z"),replaceInMT [(x,t2)] ty) --(IApp)
+infer g (Lambda x Int t) = do
+    (d1,c,ty) <- infer ((x,([],IntT)):g) t
+    return (d1,replaceInTerm [("X",c)] (qp ("A {}:int.X"%[x])),ArrowT x IntT ty)--(IProd)
+infer g (Lambda x s t) = do
+        (ty1,d1) <- freshTy (flatenv g) s
+        (d2,c,ty2) <- infer ((x,([],ty1)):g) t
+        return (d2++d1,c,ArrowT "_" ty1 ty2) --(IArrow)
 
-inferSub :: MonoType -> MonoType -> Term
-inferSub IntT IntT = Constant "true"
-inferSub (BoolT t1) (BoolT t2) = replaceInTerm [("s",t1),("t",t2)] (qp "s=>t")
-inferSub (ArrowT x IntT ty) (ArrowT y IntT ty_) = replaceInTerm [("c",c)] (qp $ "A {}:int.c"%[z])
-    where z = freshVar (ArrowT "_" ty ty_)
-          c = inferSub (replaceInMT [(x,Variable z)] ty) (replaceInMT [(y,Variable z)] ty_)
-inferSub (ArrowT "_" ty1 ty2) (ArrowT "_" ty1_ ty2_) = replaceInTerm [("X",c1),("Y",c2)] (qp "X^Y")
-    where c1 = inferSub ty1_ ty1
-          c2 = inferSub ty2 ty2_
+inferSub :: MonoType -> MonoType -> Mfresh Term
+inferSub IntT IntT = return$Constant "true"
+inferSub (BoolT t1) (BoolT t2) = return$replaceInTerm [("s",t1),("t",t2)] (qp "s=>t")
+inferSub (ArrowT x IntT ty) (ArrowT y IntT ty_) = do
+    z <- freshVar
+    c <- inferSub (replaceInMT [(x,Variable z)] ty) (replaceInMT [(y,Variable z)] ty_)
+    return$replaceInTerm [("c",c)] (qp $ "A {}:int.c"%[z])
+inferSub (ArrowT "_" ty1 ty2) (ArrowT "_" ty1_ ty2_) = do
+    c1 <- inferSub ty1_ ty1
+    c2 <- inferSub ty2 ty2_
+    return$replaceInTerm [("X",c1),("Y",c2)] (qp "X^Y")
 inferSub _ _ = error "type error"          
