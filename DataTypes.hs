@@ -1,15 +1,4 @@
-module DataTypes(
-    Term(Variable,Constant,Apply,Lambda),Sort(Int,Bool,Arrow),DeltaEnv,
-    MonoType(ArrowT,IntT,BoolT),Scheme,Gamma,flat,
-    Variable,Constant,
-    printt,prnt,prints,prnty,prnsch,
-    ilaConstants,ilaOps,ilaRels,
-    logicalBinary,logicalConstants,
-    logicalQuantifiers,logicalUnary,
-    logicalSymbols,
-    baseEnv,ilaEnv,
-    simp,simplify,printLong
-    )where
+module DataTypes where
 
 import Data.Maybe(fromJust)
 import Data.List
@@ -156,3 +145,8 @@ printLong :: Term -> String --assumes ∀ is implied and prints conjunctive term
 printLong (Apply (Apply (Constant "∧") t1) t2) = printLong t1 ++ '\n':printLong t2
 printLong (Apply (Constant "∀") (Lambda x s t)) = printLong t
 printLong x = prnt x
+
+pprint = putStrLn.printLong.simp
+
+aand t1 t2 = (Apply (Apply (Constant "∧") t1) t2)
+aforall x s t = (Apply (Constant "∀") (Lambda x s t))

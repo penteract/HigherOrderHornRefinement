@@ -50,12 +50,14 @@ getTyOfConst c
 replaceInMT :: [(Variable,Term)] -> MonoType -> MonoType
 replaceInMT rs IntT = IntT
 replaceInMT rs (BoolT t) = BoolT (replaceInTerm rs t)
-replaceInMT rs (ArrowT x t1 t2) = ArrowT x (replaceInMT rs t1) (replaceInMT rs_ t2)
+replaceInMT rs (ArrowT x t1 t2) = --may cause problems if a variable in rs becomes bound
+    ArrowT x (replaceInMT rs t1) (replaceInMT rs_ t2)
     where rs_ = filter (\(a,b) -> a/=x) rs
 
 replaceInTerm :: [(Variable,Term)] -> Term -> Term
 replaceInTerm rs (Apply t1 t2) = Apply (replaceInTerm rs t1) (replaceInTerm rs t2)
-replaceInTerm rs (Lambda x s t) = Lambda x s (replaceInTerm (filter (\(a,b) -> a/=x) rs) t)
+replaceInTerm rs (Lambda x s t) = --may cause problems if a variable in rs becomes bound
+    Lambda x s (replaceInTerm (filter (\(a,b) -> a/=x) rs) t)
 replaceInTerm rs (Variable v) = fromMaybe (Variable v) (lookup v rs)
 replaceInTerm rs (Constant c) = (Constant c)
 
@@ -125,24 +127,24 @@ infer g (Apply t1 t2) = do
               )
     (d2,c2,ty2) <- infer g t2
     c3 <- inferSub ty2 ty1
-    return (d1,replaceInTerm [("X",c1),("Y",c2),("Z",c3)] (qp "X^Y^Z"),replaceInMT [(x,t2)] ty) --(IApp)
+    return (d1, aand (aand c1 c2) c3, replaceInMT [(x,t2)] ty) --(IApp)
 infer g (Lambda x Int t) = do
     (d1,c,ty) <- infer ((x,([],IntT)):g) t
-    return (d1,replaceInTerm [("X",c)] (qp ("A {}:int.X"%[x])),ArrowT x IntT ty)--(IProd)
+    return (d1,aforall x Int c,ArrowT x IntT ty)--(IProd)
 infer g (Lambda x s t) = do
         (ty1,d1) <- freshTy (flatenv g) s
         (d2,c,ty2) <- infer ((x,([],ty1)):g) t
         return (d2++d1,c,ArrowT "_" ty1 ty2) --(IArrow)
 
 inferSub :: MonoType -> MonoType -> Mfresh Term
-inferSub IntT IntT = return$Constant "true"
+inferSub IntT IntT = return $ Constant "true"
 inferSub (BoolT t1) (BoolT t2) = return$replaceInTerm [("s",t1),("t",t2)] (qp "s=>t")
 inferSub (ArrowT x IntT ty) (ArrowT y IntT ty_) = do
     z <- freshVar
     c <- inferSub (replaceInMT [(x,Variable z)] ty) (replaceInMT [(y,Variable z)] ty_)
-    return$replaceInTerm [("c",c)] (qp $ "A {}:int.c"%[z])
+    return$aforall z Int c
 inferSub (ArrowT "_" ty1 ty2) (ArrowT "_" ty1_ ty2_) = do
     c1 <- inferSub ty1_ ty1
     c2 <- inferSub ty2 ty2_
-    return$replaceInTerm [("X",c1),("Y",c2)] (qp "X^Y")
+    return $ aand c1 c2
 inferSub _ _ = error "type error"          
