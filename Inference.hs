@@ -147,4 +147,4 @@ inferSub (ArrowT "_" ty1 ty2) (ArrowT "_" ty1_ ty2_) = do
     c1 <- inferSub ty1_ ty1
     c2 <- inferSub ty2 ty2_
     return $ aand c1 c2
-inferSub _ _ = error "type error"          
+inferSub _ _ = error "type error"

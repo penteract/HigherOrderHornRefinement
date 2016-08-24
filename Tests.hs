@@ -49,16 +49,16 @@ testing7' =  testMf (do
     g <- gamma
     infer g (qp test7'))
 
-    
+
 test8 = "z = x + y ⇒ add x y z\n"++
         "n ≤ 0 ∧ r = 0 ⇒ iter f n r\n"++
         "(∃p:int. n > 0 ∧ iter f (n − 1 ) p ∧ f n p r ) ⇒ iter f n r\n"
 
 prog8 = transformProg delta (fromRight$runp test8)
-t8 = testMf (do 
+t8 = testMf (do
     g <- gamma
     infer g (snd.head$tail prog8))
-    
+
 t8p = let (d,g,t) = testMf $ inferProg delta prog8 in
           do
               pprint t

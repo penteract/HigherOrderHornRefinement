@@ -43,10 +43,9 @@ transformProg d ts = map f d
     where
         txsys = map split ts
         f (v,s) = (v,foldr (\ (v,s) term -> (Lambda v s term)) conj (zip vs (fst$slist s)))
-            where 
+            where
                 txss = [(t,xs) | (t,(xs,y))<-txsys, y==v]
                 vs = snd $ head txss
                 conj = foldl1 aand (map fst txss)
                 --could create fresh variables here, but that would make it harder to read the output
                 --for now, just assume the input is nice
-        
