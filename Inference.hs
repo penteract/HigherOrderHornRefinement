@@ -8,6 +8,7 @@ import Data.Maybe(fromJust,fromMaybe)
 import Data.Char(isDigit)
 
 import Control.Monad (liftM, ap)
+import Control.Applicative
 
 (%) :: String -> [String] -> String
 (%) s [] = s

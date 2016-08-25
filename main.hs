@@ -50,7 +50,7 @@ inferProg d prog= do
 tstEnv = [("Iter",qs "(int->int->bool)->int->int->int->bool"),
     ("Succ",qs "int->int->bool")]
 
-usage = getProgName >>= putStr.(\n->
+usage = getProgName >>= hPutStr stderr.(\n->
     "Usage: "++n++" [INPUT [OUTPUT]]"++
     "Given a system of higher order horn clauses, output a system of first order horn clauses\n"++
     "If the resulting clauses are satifiable, then the input was\n" ++
@@ -74,7 +74,7 @@ main' [x]
     | otherwise = run x (readUTF x) putStr
 main' [inf,outf] = run inf (readUTF inf) (writeFile outf)
 main' _ = do
-    putStrLn "Error: bad arguments"
+    hPutStr stderr "Error: bad arguments"
     usage
 
 
@@ -92,5 +92,4 @@ run fname inp out = do --io monad
           return$return (aand c1 c2))
         return $ printLong$simp res) of
         Right a -> out$lgb a
-        Left e -> hPutStr stderr e
-    
+        Left e -> hPutStrLn stderr e
