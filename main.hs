@@ -9,12 +9,17 @@ import FormulaChecks
 import Inference
 import DataTypes
 import Data.Maybe(fromJust)
+import Control.Applicative--((<*>))
 
 testMf = fst.flip fromM 0
 snd3 = (\(a,b,c)->b)
 trd = (\(a,b,c)->c)
 
-
+(<$*) :: Monad m => m a -> (a -> m b) -> m a
+(<$*) xm f = do
+    x<-xm
+    f x
+    return x
 
 test8 = "z = x + y ⇒ add x y z\n"++
         "n ≤ 0 ∧ r = 0 ⇒ iter f n r\n"++
@@ -50,12 +55,20 @@ inferProg d prog= do
 tstEnv = [("Iter",qs "(int->int->bool)->int->int->int->bool"),
     ("Succ",qs "int->int->bool")]
 
-usage = getProgName >>= hPutStr stderr.(\n->
-    "Usage: "++n++" [INPUT [OUTPUT]]"++
-    "Given a system of higher order horn clauses, output a system of first order horn clauses\n"++
-    "If the resulting clauses are satifiable, then the input was\n" ++
-    "If filenames are not given, uses standard input/output\n"
-    )
+usage = getProgName >>= hPutStrLn stderr.(\n-> unlines
+    ["Usage: "++n++" [INPUT [OUTPUT]]",
+     "Given a system of higher order horn clauses, output a system of first order horn clauses",
+     "If the resulting clauses are satifiable, then the input was",
+     "If filenames are not given, uses standard input/output",
+     "",
+     "OPTIONS:",
+     "-h    show this message",
+     "-n    don't try to read unicode",
+     "-u    output in unicode"])
+
+withUTF fname mode op = withFile fname mode (\h -> do
+    hSetEncoding h utf8
+    op h)
 
 openUTF fname mode = do
     h <- openFile fname mode
@@ -63,20 +76,46 @@ openUTF fname mode = do
     return h
 
 readUTF fname = openUTF fname ReadMode >>= hGetContents
-writeUTF fname s = openUTF fname WriteMode >>= flip hPutStr s
+writeUTF fname s = withUTF fname WriteMode (flip hPutStr s)
 
 main :: IO ()
-main = getArgs >>=main'
+main = getArgs >>= main' []
 
-main' [] = run "input" getContents putStr
-main' [x]
-    | x/="" && head x == '-' = usage
-    | otherwise = run x (readUTF x) putStr
-main' [inf,outf] = run inf (readUTF inf) (writeFile outf)
-main' _ = do
-    hPutStr stderr "Error: bad arguments"
+type Options = [Char]
+
+main' :: Options -> [String] -> IO ()
+main' os _
+    | 'h' `elem` os = usage
+main' os [] = run' os "input" (return stdin) ($stdout)
+main' os (('-':ops):rest) = main' (ops++os) rest
+main' os [inf] = run' os inf (openFile inf ReadMode) ($stdout)
+main' os [inf,outf] = run' os inf (openFile inf ReadMode) (withFile outf WriteMode)
+main' os _ = do
+    hPutStrLn stderr "Error: bad arguments"
     usage
 
+hSetUTF8 :: Handle -> IO ()
+hSetUTF8 = (flip hSetEncoding utf8)
+makeInpUTF :: IO Handle -> IO Handle
+makeInpUTF = (<$* hSetUTF8)
+
+makeOutUTF :: ((Handle -> IO ()) -> IO ()) -> (Handle -> IO ()) -> IO ()
+makeOutUTF out operation = out ((>>).hSetUTF8 <*> operation)
+
+
+run' :: Options -> String -> IO Handle -> ((Handle -> IO ()) -> IO ()) -> IO ()
+run' [] fname inh out    = run fname
+                               (makeInpUTF inh>>=hGetContents)
+                               (makeOutUTF out .flip hPutStr . lgb)
+run' ['n'] fname inh out = run fname
+                               (inh>>=hGetContents)
+                               (out .flip hPutStr . lgb)
+run' ['u'] fname inh out = run fname
+                               (inh>>=hGetContents)
+                               (out .flip hPutStr)
+run' _  _ _ _            = do
+    hPutStrLn stderr "Unrecognised option"
+    usage
 
 
 run :: String -> IO String -> (String -> IO ()) -> IO ()
@@ -90,6 +129,6 @@ run fname inp out = do --io monad
           (d2,g,c1) <- inferProg delta prog
           (d3,c2,ty) <- infer g goal
           return$return (aand c1 c2))
-        return $ printLong$simp res) of
-        Right a -> out$lgb a
+        return $ printLong$ simp res) of
+        Right a -> out a
         Left e -> hPutStrLn stderr e

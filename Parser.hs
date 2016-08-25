@@ -39,7 +39,7 @@ typeSymbols = ["->"]
 
 symbols :: [String]
 symbols = logicalSymbols ++ ilaOps ++ ilaRels++ typeSymbols
-    ++ ["(",")",":",".",",",";"] ++ map fst cannonicals
+    ++ ["(",")",":",".",",",";"]
     -- ++ ["environment","program","goal"]
 
 cannonise :: Token -> Token
@@ -47,7 +47,7 @@ cannonise (x,Operator,pos) = (fromMaybe x (lookup x cannonicals),Operator,pos)
 cannonise x = x
 
 tknsr = tokeniseFromOps symbols
-tknsr2 s = tknsr s >>= return.map cannonise
+tknsr2 s = tokeniseFromOps (symbols ++ map fst cannonicals) s >>= return.map cannonise
 
 type MyParser a = GenParser Token () a
     
@@ -170,7 +170,7 @@ file = do
 
 parseFile :: String -> String -> Either String (DeltaEnv,[Term],Term)
 parseFile fname contents = do
-    ts <- tokeniseFromFile symbols fname contents
+    ts <- tokeniseFromFile (symbols ++ map fst cannonicals) fname contents
     let body = strip (map cannonise ts)
     fromParse2 $ runParser file () fname body
     where
