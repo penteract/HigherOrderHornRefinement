@@ -98,7 +98,18 @@ inferProg d prog= do
 tstEnv = [("Iter",qs "(int->int->bool)->int->int->int->bool"),
     ("Succ",qs "int->int->bool")]
 
-
+test9 = unlines [
+    "environment",
+    "add : int->int->int->bool",
+    "iter:(int->int->int->bool)->int->int->bool;",
+    "",
+    "program",
+    "z = x + y ⇒ add x y z",
+    "n ≤ 0 ∧ r = 0 ⇒ iter f n r",
+    "( ∃ p : int. n > 0 ∧ iter f (n − 1 ) p ∧ f n p r ) ⇒ iter f n r;",
+    "",
+    "goal",
+    "E n,r:int. iter add n r ^ n > r"]
     
 main :: IO ()
 main = putStrLn.lgb $ unlines $ map fromEither  results

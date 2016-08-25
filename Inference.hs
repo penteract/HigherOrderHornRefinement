@@ -7,6 +7,8 @@ import Data.List(lookup)
 import Data.Maybe(fromJust,fromMaybe)
 import Data.Char(isDigit)
 
+import Control.Monad (liftM, ap)
+
 (%) :: String -> [String] -> String
 (%) s [] = s
 (%) ('{':'}':s) (x:xs) = x++(s%xs)
@@ -64,21 +66,30 @@ replaceInTerm rs (Constant c) = (Constant c)
 
 newtype Mfresh a = Mfresh {fromM :: (Int -> (a,Int))}
 
+{-f a b c = a.c.b
+        = (.) a ((.)c b)
+        = (.) a (flip (.) b c)
+        = (.) a . flip (.) b
+        
+        
+        = (.) ((.) a c) b
+        = flip (.) b ((.) a c)
+        = flip (.) b . (.) a-}
+
 instance Monad Mfresh where
     return x = Mfresh (\n->(x,n))
-    --(>>=) xm f n = let (x,m) = xm n in f x m 
-    --    uncurry f (xm n)--uncurry f.xm --flip (.) xm . uncurry-- flip (.) uncurry . flip (.)
-    --    uncurry f (xm n)
-    (>>=) (Mfresh xm) f = Mfresh (\n->let (x,m) = xm n in fromM (f x) m)
-    -- Mfresh $ uncurry (fromM.f) . fromM xm
-    -- Mfresh . flip (.) (fromM xm).uncurry.fromM
-    -- (Mfresh . flip (.) (fromM xm)).(uncurry.fromM)
-    -- flip (.) (uncurry.fromM) (Mfresh . flip (.) (fromM xm))
-    -- flip (.) (uncurry.fromM) ((Mfresh . flip (.) . fromM) xm)
-    -- flip (.) (uncurry.fromM) . Mfresh . flip (.) . fromM
-    
+    --(>>=) (Mfresh xm) f = Mfresh (\n->let (x,m) = xm n in fromM (f x) m)
+    --(>>=) xm f = Mfresh $ uncurry (fromM.f) . fromM xm
+    (>>=) = (. (uncurry . (.)fromM)) . (.) Mfresh .(flip (.) . fromM)
     --(>>=) = flip (.) uncurry . flip (.) 
 
+
+instance Functor Mfresh where
+    fmap = liftM
+instance Applicative Mfresh where 
+    pure = return
+    (<*>) = ap
+    
 freshVar :: Mfresh Variable
 freshVar = Mfresh freshVar'
 freshVar' n = ("x_"++show n,n+1)

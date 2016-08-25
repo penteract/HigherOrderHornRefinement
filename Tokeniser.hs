@@ -1,5 +1,5 @@
 module Tokeniser(
-    tokeniseFromOps,
+    tokeniseFromOps,tokeniseFromFile,
     Token,
     TokenType(Operator, Identifier, Number, NewLine)
     ) where
@@ -65,6 +65,10 @@ tokengetters t = [
 
 tokeniseFromOps :: [String] -> String -> Either String [Token]
 tokeniseFromOps ops' s = (tokeniseFromGetters $ tokengetters $ makeTree ops')  (s,initialPos "source")
+
+
+tokeniseFromFile :: [String] -> String -> String -> Either String [Token]
+tokeniseFromFile ops' fname s = (tokeniseFromGetters $ tokengetters $ makeTree ops')  (s,initialPos fname)
 
 
 tokeniseFromGetters :: Tgtrs -> Remainder -> Either String [Token]

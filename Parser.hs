@@ -38,7 +38,9 @@ lgb s= legiblise s ll ll
 typeSymbols = ["->"]
 
 symbols :: [String]
-symbols = logicalSymbols ++ ilaOps ++ ilaRels++ typeSymbols ++["(",")",":",".",","] ++ map fst cannonicals
+symbols = logicalSymbols ++ ilaOps ++ ilaRels++ typeSymbols
+    ++ ["(",")",":",".",",",";"] ++ map fst cannonicals
+    -- ++ ["environment","program","goal"]
 
 cannonise :: Token -> Token
 cannonise (x,Operator,pos) = (fromMaybe x (lookup x cannonicals),Operator,pos)
@@ -93,6 +95,7 @@ parser = do res <- chainl lineParser (tok "\n" >> return (++)) []
 lineParser :: MyParser [Term]
 lineParser = (formula >>= return.return)
          <|> parserReturn []
+
 formula :: MyParser Term
 formula = quantified
       <|> opPrecl (map return logicalBinary) negation
@@ -143,6 +146,45 @@ sort :: MyParser Sort
 sort = chainr1 ((tok "int" >> return Int) <|> (tok "bool" >> return Bool) <|> parens sort)
                 (tok "->" >> return Arrow)
 
+environment :: MyParser DeltaEnv
+environment = chainl (do
+    (Variable v) <- variable
+    tok ":"
+    s<-sort
+    return [(v,s)])
+    (tok "\n">>return (++)) []
+
+separator = tok ";" >> tok "\n"
+
+file :: MyParser (DeltaEnv,[Term],Term)
+file = do
+    tok "environment" >> tok "\n"
+    d <- environment
+    separator >> tok "program" >> tok "\n"
+    prog <- chainl lineParser (tok "\n" >> return (++)) []
+    separator >> tok "goal" >> tok "\n"
+    goal <- formula
+    eof <|> ((tok "\n" <|> separator <|> tok ";") >> eof)
+    return (d,prog,goal)
+
+
+parseFile :: String -> String -> Either String (DeltaEnv,[Term],Term)
+parseFile fname contents = do
+    ts <- tokeniseFromFile symbols fname contents
+    let body = strip (map cannonise ts)
+    fromParse2 $ runParser file () fname body
+    where
+        strip [] = []
+        strip (("\n",NewLine,_):rest) = strip rest
+        strip (c:rest) = c:strip' rest
+        strip' (("\n",NewLine,p):rest) = ("\n",NewLine,p) : strip rest
+        strip' x = strip x
+
+strip [] = []
+strip (("\n",NewLine,_):rest) = strip rest
+strip (c:rest) = c:strip' rest
+strip' (("\n",NewLine,p):rest) = ("\n",NewLine,p) : strip rest
+strip' x = strip x
 
 --functions to help display the result of the parser
 
