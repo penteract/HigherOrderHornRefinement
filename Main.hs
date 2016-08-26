@@ -71,9 +71,9 @@ makeOutUTF out operation = out (\ h -> hSetUTF8 h >> operation h)
 
 run' :: Options -> String -> IO Handle -> ((Handle -> IO ()) -> IO ()) -> IO ()
 run' [] fname inh out    = run fname (makeInpUTF inh>>=hGetContents)
-                                     (makeOutUTF out .flip hPutStrLn . lgb)
+                                     (makeOutUTF out .flip hPutStrLn . ununicode)
 run' ['n'] fname inh out = run fname (inh>>=hGetContents)
-                                     (out .flip hPutStrLn . lgb)
+                                     (out .flip hPutStrLn . ununicode)
 run' ['u'] fname inh out = run fname (makeInpUTF inh>>=hGetContents)
                                      (makeOutUTF out .flip hPutStrLn)
 run' _  _ _ _            = do

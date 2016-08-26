@@ -1,4 +1,4 @@
-module Transform--(transform,checkHorn)
+module Transform(transform,checkHorn,transformProg)
     where
 
 import DataTypes

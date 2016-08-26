@@ -8,8 +8,11 @@ import Text.Parsec.Prim(parserReturn)
 import Data.Char
 import Tokeniser
 import Data.Maybe
+import Data.List(sortBy)
+import Data.Ord(comparing)
 import DataTypes
 
+sortOn f = map snd . sortBy (comparing fst) . map (\x -> let y = f x in y `seq` (y, x))
 
 exists = "∃"
 forall = "∀"
@@ -17,19 +20,19 @@ forall = "∀"
 (.>) :: Monad m =>  (b -> m a) -> (a->c) -> b -> m c
 (.>) xm f y = (xm y) >>= return.f
 
-cannonicals :: [(String,String)]
-cannonicals = [ ("^","∧"), ("=>","⇒"), ("\\","λ"),("A","∀"),("E","∃"),("≤","<="),
-    ("−","-"),("→","->"),("\\/","∨"),("<=>","⇔")]
-
 --get rid of unicode
 legiblise "" _ _ = ""
 legiblise (c:s) [] l = c:legiblise s l l
 legiblise s ((x,y):xs) l = if start == y then x ++ legiblise end l l else legiblise s xs l
     where (start,end)= splitAt (length y) s
 
-ll= [ ("^","∧"), ("=>","⇒"), ("\\","λ"),("A","∀"),("E","∃"), ("\\/","∨"),("<=>","⇔")]
+ll= sortOn (negate.length.snd) [ ("^","∧"), ("=>","⇒"), ("\\","λ"),("A","∀"),("E","∃"), ("\\/","∨"),("<=>","⇔")]
 
-lgb s= legiblise s ll ll
+ununicode :: String -> String
+ununicode s= legiblise s ll ll
+
+cannonicals :: [(String,String)]
+cannonicals = ll ++[ ("≤","<="),("−","-"),("→","->")]
 
 --Parser    
 
@@ -176,7 +179,7 @@ parseFile :: String -> String -> Either String (DeltaEnv,[Term],Term)
 parseFile fname contents = do
     ts <- tokeniseFromFile (symbols ++ map fst cannonicals) fname contents
     let body = strip (map cannonise ts)
-    fromParse2 $ runParser file () fname body
+    fromParse $ runParser file () fname body
     where
         strip [] = []
         strip (("\n",NewLine,_):rest) = strip rest
@@ -190,9 +193,10 @@ strip (c:rest) = c:strip' rest
 strip' (("\n",NewLine,p):rest) = ("\n",NewLine,p) : strip rest
 strip' x = strip x
 
---functions to help display the result of the parser
+--functions to help display the result of the parser 
 
-
+fromParse (Left x) = Left $ show x
+fromParse (Right x) =  Right x
 
 fromRight :: Either a b -> b
 fromRight (Right x) = x
@@ -205,21 +209,17 @@ fromEither (Left x) = x
 fromEither (Right x) = x
 
 
-fromParse (Left x) = show x
-fromParse (Right x) =  x
-fromParse2 (Left x) = Left $ show x
-fromParse2 (Right x) =  Right x
 
-qshow s = putStrLn $ fromEither (tknsr2 s >>= (\ x->return $ fromParse (
+qshow s = putStrLn $ fromEither (tknsr2 s >>= (\ x-> fromParse (
             runParser parser () "" x >>= return.concat.map (++"\n").map prnt)))
-qshowl s = putStrLn $ lgb $ fromEither (tknsr2 s >>= (\ x->return $ fromParse (
+qshowl s = putStrLn $ ununicode $ fromEither (tknsr2 s >>= (\ x-> fromParse (
             runParser parser () "" x >>= return.concat.map (++"\n").map prnt)))
-qshowl2 s = putStrLn $ lgb $ fromEither (tknsr2 s >>= (\ x->return $ fromParse (
+qshowl2 s = putStrLn $ ununicode $ fromEither (tknsr2 s >>= (\ x-> fromParse (
             runParser parser () "" x >>= return.concat.map (++"\n").map printt)))
 
 qp = fromRight . runParser formula () "" . fromRight.tknsr2
             
-runp s=  tknsr2 s >>= fromParse2. runParser parser () "" 
+runp s=  tknsr2 s >>= fromParse. runParser parser () "" 
 
 
 qt s = fromRight $ (runParser parser () "" (fromRight $ tknsr2 s))

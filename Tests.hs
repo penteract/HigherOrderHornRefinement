@@ -89,7 +89,7 @@ test9 = unlines [
     "E n,r:int. iter add n r ^ n > r"]
     
 main :: IO ()
-main = putStrLn.lgb $ unlines $ map fromEither  results
+main = putStrLn.ununicode $ unlines $ map fromEither  results
     where 
         results = (map ((>>return"pass.").runp) [test1,test2,test3,test4,test5,test8] ++
             [runp test1>>=getsort.head>>return "pass."] ++
