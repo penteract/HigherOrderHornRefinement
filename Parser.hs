@@ -19,7 +19,7 @@ forall = "∀"
 
 cannonicals :: [(String,String)]
 cannonicals = [ ("^","∧"), ("=>","⇒"), ("\\","λ"),("A","∀"),("E","∃"),("≤","<="),
-    ("−","-"),("→","->"),("\\/","∨")]
+    ("−","-"),("→","->"),("\\/","∨"),("<=>","⇔")]
 
 --get rid of unicode
 legiblise "" _ _ = ""
@@ -87,29 +87,27 @@ parens p = do tok "("
               tok ")"
               return t
 
-parser :: MyParser [Term]
-parser = do res <- chainl lineParser (tok "\n" >> return (++)) []
-            eof
-            return res
+number :: MyParser Term
+number = testTok (\ (_,t,_) ->t==Number) >>= return.numToTerm.read
 
-lineParser :: MyParser [Term]
-lineParser = (formula >>= return.return)
-         <|> parserReturn []
+variable :: MyParser Term
+variable = testTok (\ (_,t,_) ->t==Identifier) >>= return.Variable
 
-formula :: MyParser Term
-formula = quantified
-      <|> opPrecl (map return logicalBinary) negation
-      <?> "formula"
+sort :: MyParser Sort
+sort = chainr1 ((tok "int" >> return Int) <|> (tok "bool" >> return Bool) <|> parens sort)
+                (tok "->" >> return Arrow)
 
-negation = (tok "¬" >> (quantified <|> negation) >>= return.(Apply (Constant "¬")))
-       <|> opPrecl [ilaRels,ilaOps] simpleFormula
+vlist :: MyParser [Term]
+vlist = chainl1 (variable >>= return.return) (tok "," >> return (++))
 
+simpleTerm :: MyParser Term
+simpleTerm = parens formula
+         <|> number
+         <|> variable
 
-quantified :: MyParser Term
-quantified = do q <- oneOf logicalQuantifiers
-                tvs <- tvlist
-                body <- formula
-                return $ fromtvlist q tvs body
+simpleFormula :: MyParser Term
+simpleFormula = (many1 simpleTerm >>= return . foldl1 Apply)
+
 
 tvlist :: MyParser [(Sort,Term)]
 tvlist = do x<-chainl1
@@ -126,25 +124,31 @@ fromtvlist _ [] body = body
 fromtvlist q ((s,Variable v):tvs) body = (if q=="λ" then id else Apply (Constant q))
                     (Lambda v s (fromtvlist q tvs body))
 
-vlist :: MyParser [Term]
-vlist = chainl1 (variable >>= return.return) (tok "," >> return (++))
+negation = (tok "¬" >> (quantified <|> negation) >>= return.(Apply (Constant "¬")))
+       <|> opPrecl [ilaRels,ilaOps] simpleFormula
 
-simpleFormula :: MyParser Term
-simpleFormula = (many1 simpleTerm >>= return . foldl1 Apply)
 
-simpleTerm :: MyParser Term
-simpleTerm = parens formula
-         <|> number
-         <|> variable
-         
+quantified :: MyParser Term
+quantified = do q <- oneOf logicalQuantifiers
+                tvs <- tvlist
+                body <- formula
+                return $ fromtvlist q tvs body
 
-number :: MyParser Term
-number = testTok (\ (_,t,_) ->t==Number) >>= return.numToTerm.read
-variable = testTok (\ (_,t,_) ->t==Identifier) >>= return.Variable
+formula :: MyParser Term
+formula = quantified
+      <|> opPrecl (map return logicalBinary) negation
+      <?> "formula"
 
-sort :: MyParser Sort
-sort = chainr1 ((tok "int" >> return Int) <|> (tok "bool" >> return Bool) <|> parens sort)
-                (tok "->" >> return Arrow)
+lineParser :: MyParser [Term]
+lineParser = (formula >>= return.return)
+         <|> parserReturn []
+
+parser :: MyParser [Term]
+parser = do res <- chainl lineParser (tok "\n" >> return (++)) []
+            eof
+            return res
+
+
 
 environment :: MyParser DeltaEnv
 environment = chainl (do

@@ -1,19 +1,18 @@
-true
-x_32 = x_30 + x_31 ⇒ x_3 x_32 x_31 x_30
+x_30 = x_28 + x_29 ⇒ x_3 x_30 x_29 x_28
 n <= 0 ⇒ x_17 r n
 r = 0 ⇒ x_18 r n
 x_17 r n ∧ x_18 r n ⇒ x_15 r n
 n > 0 ⇒ x_22 p r n
-x_14 x_28 x_27 x_26 ⇒ x_24 p r n x_28 x_27 x_26
-x_25 p r n p (n - 1) ⇒ x_23 p r n
+x_14 x_26 x_25 x_24 ⇒ x_7 x_26 x_25 x_24
+x_10 p (n - 1) ⇒ x_23 p r n
 x_22 p r n ∧ x_23 p r n ⇒ x_20 p r n
 x_14 r p n ⇒ x_21 p r n
-x_20 x_29 r n ∧ x_21 x_29 r n ⇒ x_19 r n x_29
+x_20 x_27 r n ∧ x_21 x_27 r n ⇒ x_19 r n x_27
 (∃x:int.x_19 r n x) ⇒ x_16 r n
-x_7 x_35 x_34 x_33 ⇒ x_14 x_35 x_34 x_33
-x_15 x_37 x_36 ∧ x_16 x_37 x_36 ⇒ x_10 x_37 x_36
-x_44 r n x_47 x_46 x_45 ⇒ x_42 r n x_47 x_46 x_45
-x_43 r n r n ⇒ x_40 r n
-n > r ⇒ x_41 r n
-x_40 x_48 n ∧ x_41 x_48 n ⇒ x_39 n x_48
-(∃x:int.x_39 x_49 x) ⇒ x_38 x_49
+x_7 x_33 x_32 x_31 ⇒ x_14 x_33 x_32 x_31
+x_15 x_35 x_34 ∧ x_16 x_35 x_34 ⇒ x_10 x_35 x_34
+x_3 x_42 x_41 x_40 ⇒ x_7 x_42 x_41 x_40
+x_10 r n ⇒ x_38 r n
+n > r ⇒ x_39 r n
+x_38 x_43 n ∧ x_39 x_43 n ⇒ x_37 n x_43
+(∃x:int.x_37 x_44 x) ⇒ x_36 x_44

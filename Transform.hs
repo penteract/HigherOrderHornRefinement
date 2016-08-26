@@ -13,8 +13,7 @@ transform e (Apply (Apply (Constant "⇒") a) b) =
        then error "we have a problem"
        else (vb,foldr (\ (v,s) term -> (Lambda v s term)) a (zip vs ss))
     where (vs,vb) = vlist b
-          s = fromJust $ lookup vb e
-          (ss,sb) = slist s
+          (ss,sb) = slist $ fromJust $ lookup vb e
     
 
 split (Apply (Apply (Constant "⇒") a) b) = (a,vlist b)

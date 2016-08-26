@@ -3,6 +3,8 @@ module Inference
 
 import DataTypes
 import Parser
+import Fresh
+
 import Data.List(lookup)
 import Data.Maybe(fromJust,fromMaybe)
 import Data.Char(isDigit)
@@ -20,20 +22,6 @@ import Control.Applicative
 
 flatenv :: Gamma -> DeltaEnv
 flatenv = map (\(a,b)->(a,flat $ snd b))
-
-ilaGamma :: Gamma
-ilaGamma = 
-    (zip ilaOps $ repeat ([],(ArrowT "_" IntT (ArrowT "_" IntT IntT))))
-  ++ map (\ r -> (r,([],ArrowT "x" IntT . ArrowT "y" IntT $ BoolT (qp ("x {} y"%[r]))))) ilaRels
-  ++ map (\ r -> (r,
-            ([("X",Bool),("Y",Bool)],ArrowT "_" (BoolT (qp "X")) . ArrowT "_" (BoolT (qp "Y")) $ BoolT (qp ("X {} Y"%[r])))))
-         logicalBinary
-  ++ map (\ r -> (r,
-            ([("X",Bool)],ArrowT "_" (BoolT (qp "X")) $ BoolT (qp (r++" Y")))))
-         logicalUnary
-  ++ [("∃", ([("X",Arrow Int Bool)], --This one might be more complicated
-    ArrowT "_" (ArrowT "x" IntT (BoolT $ qp "X x") ) (BoolT $ qp "∃x:int.X x")))]
-
 
 getTyOfConst :: Constant -> Scheme
 getTyOfConst c
@@ -64,58 +52,6 @@ replaceInTerm rs (Lambda x s t) = --may cause problems if a variable in rs becom
 replaceInTerm rs (Variable v) = fromMaybe (Variable v) (lookup v rs)
 replaceInTerm rs (Constant c) = (Constant c)
 
-
-newtype Mfresh a = Mfresh {fromM :: (Int -> (a,Int))}
-
-{-f a b c = a.c.b
-        = (.) a ((.)c b)
-        = (.) a (flip (.) b c)
-        = (.) a . flip (.) b
-        
-        
-        = (.) ((.) a c) b
-        = flip (.) b ((.) a c)
-        = flip (.) b . (.) a-}
-
-instance Monad Mfresh where
-    return x = Mfresh (\n->(x,n))
-    --(>>=) (Mfresh xm) f = Mfresh (\n->let (x,m) = xm n in fromM (f x) m)
-    --(>>=) xm f = Mfresh $ uncurry (fromM.f) . fromM xm
-    (>>=) = (. (uncurry . (.)fromM)) . (.) Mfresh .(flip (.) . fromM)
-    --(>>=) = flip (.) uncurry . flip (.) 
-
-
-instance Functor Mfresh where
-    fmap = liftM
-instance Applicative Mfresh where 
-    pure = return
-    (<*>) = ap
-    
-freshVar :: Mfresh Variable
-freshVar = Mfresh freshVar'
-freshVar' n = ("x_"++show n,n+1)
-    
-freshRel :: DeltaEnv -> Sort -> Mfresh (Term,(Variable,Sort))
-freshRel d rho = do
-    x<-freshVar
-    return (foldl (\ t y -> Apply t (Variable y)) (Variable x) ys,
-                    (x,iterate (Arrow Int) rho !! length ys))
-    where ys = map fst $ filter ((==Int).snd) d
-
-freshTy :: DeltaEnv -> Sort -> Mfresh (MonoType,DeltaEnv)
-freshTy d Bool = do (t,d) <- freshRel d Bool
-                    return (BoolT t,[d])
-freshTy d Int = return (IntT,[])
-freshTy d (Arrow Int s) = do
-    z <- freshVar
-    (ty,ds)<-freshTy ((z,Int):d) s
-    return $ (ArrowT z IntT ty ,ds)
-freshTy d (Arrow s1 s2) = do
-    (ty1,d1) <- freshTy d s1
-    (ty2,d2) <- freshTy d s2
-    return (ArrowT "_" ty1 ty2,d2++d1)
-
-
 infer :: Gamma -> Term -> Mfresh (DeltaEnv,Term,MonoType)
 infer g (Variable v) = do
     (ts,ds) <- sequence (map (freshRel (flatenv g)) ss) >>= return.unzip
@@ -126,7 +62,7 @@ infer g (Variable v) = do
                           Nothing -> error (v++" not found")
         (vs,ss) = unzip targs
 infer g (Constant c) = do
-    (ts,ds) <- sequence (map (freshRel (flatenv g)) ss) >>= return.unzip
+    (ts,ds) <- unzip <$> mapM (freshRel (flatenv g)) ss
     return (ds,Constant "true",replaceInMT (zip vs ts) ty)--(IConst)
     where 
         (targs,ty) = getTyOfConst c
@@ -160,3 +96,12 @@ inferSub (ArrowT "_" ty1 ty2) (ArrowT "_" ty1_ ty2_) = do
     c2 <- inferSub ty2 ty2_
     return $ aand c1 c2
 inferSub _ _ = error "type error"
+
+
+inferProg :: DeltaEnv -> [(Variable,Term)] -> Mfresh (DeltaEnv, Gamma, Term)
+inferProg d prog= do
+    (g,d') <- freshEnv d
+    (ds,cs,tys) <- unzip3 <$> mapM (infer g) ts
+    c2s <- sequence (zipWith inferSub tys (map(snd.fromJust.flip lookup g) vs))
+    return (concat ds,g,foldl1 aand (zipWith aand cs c2s))
+    where (vs,ts) = unzip prog
