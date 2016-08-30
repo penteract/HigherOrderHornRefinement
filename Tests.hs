@@ -12,15 +12,15 @@ import Data.Functor
 test1 = "∀r:int.∀n:int.∀m:int.∀Iter:(int->int->bool)->int->int->int->bool.∀f:int->int->bool. ∃x:int. ¬(n <= 0) ∧ Iter f x (n - 1) r ∧ f m x ⇒ Iter f m n r"
 
 
-test2 = "Af:int->(int->int).Eg:int->int.¬ En:int.f n = g"
+test2 = "A f:int->(int->int).E g:int->int.¬ E n:int.f n = g"
 
 test3 = "y = x + 1 ⇒ Succ x y\n"++
     "n ≤ 0 ∧ r = m ⇒ Iter f m n r\n"++
     "(∃x:int. ¬(n ≤ 0) ∧ Iter f x (n − 1 ) r ∧ f m x )⇒ Iter f m n r\n"
-test4 = "Ax:int.Ay:int.y = x + 1 ⇒ Succ x y\n"++
-    "An:int.Am:int.Af:int->int->bool.n ≤ 0 ∧ r = m ⇒ Iter f m n r\n"++
+test4 = "A x:int.A y:int.y = x + 1 ⇒ Succ x y\n"++
+    "A n:int.A m:int.A f:int->int->bool.n ≤ 0 ∧ r = m ⇒ Iter f m n r\n"++
     "∃x:int. ¬(n ≤ 0) ∧ Iter f x (n − 1 ) r ∧ f m x ⇒ Iter f m n r\n"
-test5 = "Ax,y:int,somefunction:int->int.Ea,b:int.x=somefuntion a^y=somefunction b"
+test5 = "A x,y:int,somefunction:int->int.E a,b:int.x=somefuntion a^y=somefunction b"
 
 
 test6 = qp "n<=0^r=0"

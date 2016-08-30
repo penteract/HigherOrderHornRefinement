@@ -38,6 +38,8 @@ cannonicals = ll ++[ ("≤","<="),("−","-"),("→","->")]
 
 --setup 
 
+isWord w = w=="" || (isAlpha (head w) && (all (\c->isAlphaNum c||c=='_') w))
+
 typeSymbols = ["->"]
 
 symbols :: [String]
@@ -47,10 +49,11 @@ symbols = logicalSymbols ++ ilaOps ++ ilaRels++ typeSymbols
 
 cannonise :: Token -> Token
 cannonise (x,Operator,pos) = (fromMaybe x (lookup x cannonicals),Operator,pos)
+cannonise (x,Identifier,pos) = fromMaybe (x,Identifier,pos) (lookup x cannonicals >>= \o->Just (o,Operator,pos))
 cannonise x = x
 
 tknsr = tokeniseFromOps symbols
-tknsr2 s = tokeniseFromOps (symbols ++ map fst cannonicals) s >>= return.map cannonise
+tknsr2 s = tokeniseFromOps (filter (not.isWord) (symbols ++ map fst cannonicals)) s >>= return.map cannonise
 
 type MyParser a = GenParser Token () a
     
