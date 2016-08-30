@@ -1,19 +1,19 @@
 module DataTypes where
 
-import Data.Maybe(fromJust)
+import Data.Maybe(fromJust,fromMaybe)
 import Data.List
 
 data Sort = Arrow Sort Sort
           | Int | Bool
     deriving (Eq)
-    
+
 instance Show Sort where
     show = prns
-    
+
 data MonoType = ArrowT Variable MonoType MonoType
           | IntT | BoolT Term 
     deriving (Eq)
-    
+
 type Scheme = ([(Variable,Sort)],MonoType)
 
 instance Show MonoType where
@@ -27,7 +27,7 @@ data Term = Variable Variable
           | Apply Term Term
           | Lambda Variable Sort Term
           deriving (Eq)
-          
+
 instance Show Term where
     show = prnt
 
@@ -39,6 +39,21 @@ flat :: MonoType -> Sort
 flat (ArrowT _ a b) = Arrow (flat a) (flat b)
 flat IntT = Int
 flat (BoolT _) = Bool
+
+
+replaceInMT :: [(Variable,Term)] -> MonoType -> MonoType
+replaceInMT rs IntT = IntT
+replaceInMT rs (BoolT t) = BoolT (replaceInTerm rs t)
+replaceInMT rs (ArrowT x t1 t2) = --may cause problems if a variable in rs becomes bound
+    ArrowT x (replaceInMT rs t1) (replaceInMT rs_ t2)
+    where rs_ = filter (\(a,b) -> a/=x) rs
+
+replaceInTerm :: [(Variable,Term)] -> Term -> Term
+replaceInTerm rs (Apply t1 t2) = Apply (replaceInTerm rs t1) (replaceInTerm rs t2)
+replaceInTerm rs (Lambda x s t) = --may cause problems if a variable in rs becomes bound
+    Lambda x s (replaceInTerm (filter (\(a,b) -> a/=x) rs) t)
+replaceInTerm rs (Variable v) = fromMaybe (Variable v) (lookup v rs)
+replaceInTerm rs (Constant c) = (Constant c)
 
 --symbols
 logicalConstants = ["true","false"]

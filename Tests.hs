@@ -46,7 +46,7 @@ t7 = qp test7
 t7'= qp test7'
 testing7 =  testMf (do 
     g <- gamma
-    infer g (snd$ transform (flatenv g) t7))
+    infer g (snd$fromRight$ transform (flatenv g) t7))
 testing7' =  testMf (do 
     g <- gamma
     infer g (qp test7'))
@@ -56,7 +56,7 @@ test8 = "z = x + y ⇒ add x y z\n"++
         "n ≤ 0 ∧ r = 0 ⇒ iter f n r\n"++
         "(∃p:int. n > 0 ∧ iter f (n − 1 ) p ∧ f n p r ) ⇒ iter f n r\n"
 
-prog8 = transformProg delta (fromRight$runp test8)
+prog8 = fromRight (runp test8 >>=transformProg delta)
 t8 = testMf (do
     g <- gamma
     infer g (snd.head$tail prog8))
@@ -93,6 +93,6 @@ main = putStrLn.ununicode $ unlines $ map fromEither  results
     where 
         results = (map ((>>return"pass.").runp) [test1,test2,test3,test4,test5,test8] ++
             [runp test1>>=getsort.head>>return "pass."] ++
-            [runp test3>>=return.unlines.map (\(s,body) ->s++":="++prnt body).checkHorn tstEnv])
+            [runp test3>>=checkHorn tstEnv>>=return.unlines.map (\(s,body) ->s++":="++prnt body)])
     
 --At the moment just checks that things parse, not actually what they parse into

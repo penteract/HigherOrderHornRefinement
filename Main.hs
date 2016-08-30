@@ -87,7 +87,7 @@ run fname inp out = do --io monad
     case (do -- Either monad (Exceptions)
         (delta,dd,goal) <- parseFile fname s
         -- checktype dd
-        prog <- return $ transformProg delta dd
+        prog <- transformProg delta dd
         res <- runMf (do --Mfresh
           (d2,g,c1) <- inferProg delta prog
           (d3,c2,ty) <- infer g goal
