@@ -9,7 +9,7 @@ import Data.List(lookup)
 import Data.Maybe(fromJust,fromMaybe)
 import Data.Char(isDigit)
 
-import Control.Monad (liftM, ap)
+import Control.Monad --(liftM, ap)
 import Control.Applicative
 
 (%) :: String -> [String] -> String

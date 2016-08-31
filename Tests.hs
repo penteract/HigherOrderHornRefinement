@@ -6,6 +6,7 @@ import Transform
 import FormulaChecks
 import Inference
 import Fresh
+import Simplify
 import Data.Maybe(fromJust)
 import Data.Functor
 

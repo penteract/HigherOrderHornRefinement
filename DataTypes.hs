@@ -2,6 +2,7 @@ module DataTypes where
 
 import Data.Maybe(fromJust,fromMaybe)
 import Data.List
+import Tools
 
 data Sort = Arrow Sort Sort
           | Int | Bool
@@ -54,6 +55,16 @@ replaceInTerm rs (Lambda x s t) = --may cause problems if a variable in rs becom
     Lambda x s (replaceInTerm (filter (\(a,b) -> a/=x) rs) t)
 replaceInTerm rs (Variable v) = fromMaybe (Variable v) (lookup v rs)
 replaceInTerm rs (Constant c) = (Constant c)
+
+getQuants :: Term -> ([(Variable,Sort)],Term)
+getQuants (Apply (Constant "∀") (Lambda x s t)) = ((x,s):vss, t1) where (vss,t1) = getQuants t
+getQuants x = ([],x)
+
+freeVars :: Term -> [Variable]
+freeVars (Variable v) = [v]
+freeVars (Constant _) = []
+freeVars (Apply t1 t2) = union (freeVars t1) (freeVars t2)
+freeVars (Lambda x s t) = filter (/=x) $ freeVars t
 
 --symbols
 logicalConstants = ["true","false"]
@@ -146,25 +157,6 @@ prnty' b (ArrowT x t1 t2) =
     (if b then parise else id) (x++":"++prnty' True t1 ++ "->" ++ prnty' False t2)
 
 
---Strip outermost universal quantifiers from a conjugation of terms
-stripQuantifiers :: Term -> Term
-stripQuantifiers (Apply (Apply (Constant "∧") t1) t2) =
-    (Apply (Apply (Constant "∧") (stripQuantifiers t1)) (stripQuantifiers t2))
-stripQuantifiers (Apply (Constant "∀") (Lambda x s t)) = stripQuantifiers t
-stripQuantifiers x = x
-
-simplify :: Term -> Term
-simplify (Apply (Apply (Constant "∧") (Constant "true")) t) = simplify t
-simplify (Apply (Apply (Constant "∧") t) (Constant "true")) = simplify t
-simplify (Apply (Apply (Constant "⇒") (Constant "true")) t) = simplify t
-simplify (Apply t1 t2) = Apply (simplify t1) (simplify t2)
-simplify (Lambda x s t) = Lambda x s (simplify t)
-simplify t = t
-
-simp t = simp' t (simplify t) -- simp' <*> simplify
-simp' t t'= if t==t' then t else simp t'
-
-
 opsByPrec = map return logicalBinary ++ [logicalUnary,ilaRels,ilaOps]
 getprec = getprec' 1 opsByPrec
 getprec' n [] = []
@@ -177,9 +169,15 @@ printLong :: Term -> String --prints conjunctive terms on separate lines
 printLong (Apply (Apply (Constant "∧") t1) t2) = printLong t1 ++ '\n':printLong t2
 printLong x = prnt x
 
-printOut = printLong.simp.stripQuantifiers
-
-pprint = putStrLn.printLong.simp.stripQuantifiers
+--prints conjunctive terms on separate lines and indents foralls
+printInd :: Int -> [(Variable,Sort)] -> Term -> String
+printInd n vss (Apply (Constant "∀") (Lambda x s t)) = printInd n ((x,s):vss) t
+printInd n (vs:vss) t = replicate n ' ' ++'∀':intercalate "," (map (\(v,s)->"{}:{}"%[v,show s])(vs:vss)) ++
+    "\n" ++ printInd (n+2+2*length vss) [] t
+printInd n [] (Apply (Apply (Constant "∧") t1) t2) =
+    printInd n [] t1 ++ '\n':printInd n [] t2
+printInd n [] x = replicate n ' ' ++ prnt x
 
 aand t1 t2 = (Apply (Apply (Constant "∧") t1) t2)
 aforall x s t = (Apply (Constant "∀") (Lambda x s t))
+aimplies t1 t2 = (Apply (Apply (Constant "⇒") t1) t2)

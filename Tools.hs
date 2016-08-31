@@ -11,3 +11,7 @@ module Tools
 errorPart :: String -> Either String a -> Either String a
 errorPart s (Left x)= Left ("{} Error:\n{}" % [s,x])
 errorPart _ (Right x) = Right x
+
+
+fromRight :: Either a b -> b
+fromRight (Right x) = x

@@ -1,4 +1,4 @@
-module Transform(transform,checkHorn,transformProg)
+module Transform(transform,checkHorn,transformProg,vlist,split)
     where
 
 import DataTypes
@@ -21,7 +21,15 @@ transform' e (Apply (Apply (Constant "⇒") a) b) = do
 transform' _ _ = Left "Bad format"
     
 split ::Term -> Either String (Term,([String],String))
-split (Apply (Apply (Constant "⇒") a) b) = vlist b >>= return . (,) a
+split t = do
+    let (vss,t1) = getQuants t
+    (t2,(vs,v)) <- split' t1
+    let vss2 = filter (not.(`elem` vs).fst) vss
+    return (foldr (\ (x,s) tb -> (Apply (Constant "∃") (Lambda x s tb))) t2 vss2,(vs,v))
+
+split' ::Term -> Either String (Term,([String],String))
+split' (Apply (Apply (Constant "⇒") a) b) = vlist b >>= return . (,) a
+split' _ = Left "not in Horn clause format"
 
 vlist :: Term -> Either String ([String],String)
 vlist = vlist' []
@@ -42,6 +50,11 @@ slist Int = Left "Non-relational sort"
 checkHorn :: DeltaEnv -> [Term] -> Either String [(String,Term)]
 checkHorn e = mapM (transform e)
 
+occursIn :: Variable -> Term -> Bool
+occursIn x (Variable v) = x==v
+occursIn x (Constant _) = False
+occursIn x (Apply a b) = x `occursIn` a || x `occursIn` b
+occursIn x (Lambda y _ t) = x/=y && x `occursIn` t
 
 --does not yet do sort checking
 transformProg :: DeltaEnv -> [Term] -> Either String [(Variable,Term)] --this is called (| |) in the paper

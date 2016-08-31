@@ -11,6 +11,7 @@ import Data.Maybe
 import Data.List(sortBy)
 import Data.Ord(comparing)
 import DataTypes
+import Tools
 
 sortOn f = map snd . sortBy (comparing fst) . map (\x -> let y = f x in y `seq` (y, x))
 
@@ -198,8 +199,6 @@ strip' x = strip x
 fromParse (Left x) = Left $ show x
 fromParse (Right x) =  Right x
 
-fromRight :: Either a b -> b
-fromRight (Right x) = x
 
 fromLeft :: Either a b -> a
 fromLeft (Left x) = x
