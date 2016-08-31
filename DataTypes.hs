@@ -179,5 +179,6 @@ printInd n [] (Apply (Apply (Constant "∧") t1) t2) =
 printInd n [] x = replicate n ' ' ++ prnt x
 
 aand t1 t2 = (Apply (Apply (Constant "∧") t1) t2)
+aor t1 t2 = (Apply (Apply (Constant "∨") t1) t2)
 aforall x s t = (Apply (Constant "∀") (Lambda x s t))
 aimplies t1 t2 = (Apply (Apply (Constant "⇒") t1) t2)

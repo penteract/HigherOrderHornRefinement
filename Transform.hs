@@ -75,5 +75,5 @@ transformProg d ts = errorPart "Transformation" $ do
             where
                 txss = [(t,xs) | (t,(xs,y))<-txsys, y==v]
                 (b,vs) = head txss
-                conj = foldl1 aand (map fst txss)
+                conj = foldl1 aor (map fst txss)
     mapM f d
