@@ -20,7 +20,9 @@ isRelational (Arrow r1 r2) = isRelational r1 && isRelational r2
 isRelational _ = False
             
 
-         
+checkSort :: DeltaEnv -> Term -> Either String ()
+checkSort env t = getsort' (env++ilaEnv) Nothing t >> Right ()
+
 getsort :: Term -> Either String Sort
 getsort = getsort' ilaEnv Nothing
 
@@ -33,7 +35,6 @@ getsort' env _ (Apply a b) = do
                                   else Left ("type error: applying " ++ printt a ++ ":" ++ prints sa ++
                                   "\nto" ++ printt b ++ ":" ++ prints sb)
          _ -> Left ("applying non-function: "++printt a)
-
 getsort' env _ (Lambda x s a) = do
     sa <- getsort' ((x,s):env) Nothing a
     return (Arrow s sa)

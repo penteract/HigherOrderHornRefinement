@@ -67,7 +67,7 @@ infer g (Lambda x s t) = do
 
 inferSub :: MonoType -> MonoType -> Mfresh Term
 inferSub IntT IntT = return $ Constant "true"
-inferSub (BoolT t1) (BoolT t2) = return$replaceInTerm [("s",t1),("t",t2)] (qp "s=>t")
+inferSub (BoolT t1) (BoolT t2) = return $ aimplies t1 t2
 inferSub (ArrowT x IntT ty) (ArrowT y IntT ty_) = do
     z <- freshVar
     c <- inferSub (replaceInMT [(x,Variable z)] ty) (replaceInMT [(y,Variable z)] ty_)

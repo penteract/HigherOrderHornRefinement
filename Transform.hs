@@ -3,8 +3,8 @@ module Transform(transform,checkHorn,transformProg,vlist,split)
 
 import DataTypes
 import Tools
+import FormulaChecks(checkSort)
 import Data.Maybe(fromJust)
---import Inference(replaceInTerm)
 
 transform d t = errorPart "Transformation" $ transform' d t
 
@@ -62,18 +62,16 @@ transformProg d ts = errorPart "Transformation" $ do
     txsys <- mapM split ts
     let f (v,s) = do
             (ss,sb)<- slist s
-            if txss==[] then Left ("No clauses given for {}"%[v]) else Right ()
-            if not (all ((==vs).snd) txss) then
-                Left ("non-matching arguments for {}"%[v]) else Right ()--could create fresh variables here, but that would make it harder to read the output
-            if length vs /= length ss
-                then Left $ unlines [
-                    "unexpected number of arguments",
-                    "given {}: {}" % [show (length vs), show b],
-                    "expected {}" % [show (length ss)]]
-                else Right ()
-            Right (v,foldr (\ (v,s) term -> Lambda v s term) conj (zip vs ss))
+            "No clauses given for {}"%[v] `unless` ts/=[]
+            "non-matching arguments for {}"%[v] `unless` all (==vs) xss
+            unlines ["unexpected number of arguments to {}" % [v],
+                     "given {}" % [show (length vs)],
+                     "expected {}" % [show (length ss)]
+                    ] `unless` length vs == length ss
+            mapM (checkSort (zip vs ss ++ d)) ts
+            Right (v,foldr (\ (v,s) term -> Lambda v s term) disj (zip vs ss))
             where
-                txss = [(t,xs) | (t,(xs,y))<-txsys, y==v]
-                (b,vs) = head txss
-                conj = foldl1 aor (map fst txss)
+                (ts,xss) = unzip [(t,xs) | (t,(xs,y))<-txsys, y==v]
+                vs = head xss
+                disj = foldl1 aor ts
     mapM f d
