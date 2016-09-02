@@ -1,5 +1,6 @@
 module Tests where
 
+import Tools
 import Parser
 import DataTypes
 import Transform

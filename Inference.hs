@@ -12,16 +12,10 @@ import Data.Char(isDigit)
 import Control.Monad --(liftM, ap)
 import Control.Applicative
 
-(%) :: String -> [String] -> String
-(%) s [] = s
-(%) ('{':'}':s) (x:xs) = x++(s%xs)
-(%) ('\\':c:s) xs = c:(s%xs)
-(%) (c:s) xs = c:(s%xs)
-(%) "" _ = error "not enough '{}' in string"
-
+import Tools
 
 flatenv :: Gamma -> DeltaEnv
-flatenv = map (\(a,b)->(a,flat $ snd b))
+flatenv = map (\(x,(_,ty))->(x, flat ty))
 
 getTyOfConst :: Constant -> Scheme
 getTyOfConst c

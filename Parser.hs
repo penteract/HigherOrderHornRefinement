@@ -21,13 +21,13 @@ forall = "∀"
 (.>) :: Monad m =>  (b -> m a) -> (a->c) -> b -> m c
 (.>) xm f y = (xm y) >>= return.f
 
---get rid of unicode
+--get rid of unicode from output
 legiblise "" _ _ = ""
 legiblise (c:s) [] l = c:legiblise s l l
 legiblise s ((x,y):xs) l = if start == y then x ++ legiblise end l l else legiblise s xs l
     where (start,end)= splitAt (length y) s
 
-ll= sortOn (negate.length.snd) [ ("^","∧"), ("=>","⇒"), ("\\","λ"),("A","∀"),("E","∃"), ("\\/","∨"),("<=>","⇔")]
+ll= sortOn (negate.length.snd) [ ("^","∧"), ("=>","⇒"), ("\\","λ"),("A ","∀"),("E ","∃"), ("\\/","∨"),("<=>","⇔")]
 
 ununicode :: String -> String
 ununicode s= legiblise s ll ll
