@@ -38,7 +38,7 @@ defaultOpts = Opt
     , optHandleOut    = makeOutUTF
     , optTermOut      = \(d,g,t,goalt)->(d,g,simp t,simp goalt)
     , optTermPrint    = \(d,g,t,goalt)->(unlines $
-    {-map show d++[]:-}map show g++[]:[printOut t]++[]:"goal:":[show goalt])--printInd 0 []
+      [printOut t]++"":"goal:":[show goalt])--printInd 0 []
     , optStringOut    = ununicode
     }
 
@@ -60,6 +60,9 @@ options =
                   flip proc (foldl1 union (freeVars gt:map (freeVarsOfTy.snd.snd) g)) t
                   ,gt)) . optTermOut opts}))
         "apply the unfold reduction to output"
+    , Option ['t'] []
+        (NoArg (\opts -> opts{optTermPrint = (\(d,g,t,gt)-> unlines $ map show g++"":[optTermPrint opts (d,g,t,gt)])}))
+        "Output additional information about types"
     ]
 
 applyOpts :: Opt -> String -> IO Handle -> ((Handle -> IO ()) -> IO ()) -> IO ()

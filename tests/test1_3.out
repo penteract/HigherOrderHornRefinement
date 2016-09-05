@@ -1,6 +1,3 @@
-("add",([],x_0:int->x_1:int->x_2:int->bool[x_3 x_2 x_1 x_0]))
-("iter",([],(x_4:int->x_5:int->x_6:int->bool[x_7 x_6 x_5 x_4])->x_8:int->x_9:int->bool[x_10 x_9 x_8]))
-
 (E x:int.x_10 x x_44 ^ x_44 > x) => x_36 x_44
 x_3 x_42 x_41 x_40 => x_7 x_42 x_41 x_40
 x_34 <= 0 ^ x_35 = 0 \/ (E x:int.x_34 > 0 ^ x_10 x (x_34 - 1) ^ x_7 x_35 x x_34) => x_10 x_35 x_34
