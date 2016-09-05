@@ -2,6 +2,9 @@ module Fresh(freshVar,freshRel,freshTy,freshEnv,
     fromM,Mfresh)
     where
 
+--Implements the judgements freshVar, freshTy and freshRel given in the paper
+
+
 import DataTypes
 
 import Control.Monad (liftM, ap)

@@ -22,38 +22,13 @@ runMf = fst.flip fromM 0
     x<-xm
     f x
     return x
-{-
-usage handle = getProgName >>= hPutStrLn handle.(\n-> unlines
-    ["Usage: "++n++" [INPUT [OUTPUT]]",
-     "Given a system of higher order horn clauses, output a system of first order horn clauses",
-     "If the resulting clauses are satifiable, then the input was",
-     "If filenames are not given, uses standard input/output",
-     "",
-     "OPTIONS:",
-     "-h    show this message",
-     "-n    don't try to read unicode",
-     "-u    output in unicode",
-     "-r    apply the unfold reduction to output"])
-
-withUTF fname mode op = withFile fname mode (\h -> do
-    hSetEncoding h utf8
-    op h)
-
-openUTF fname mode = do
-    h <- openFile fname mode
-    hSetEncoding h utf8
-    return h
-
-readUTF fname = openUTF fname ReadMode >>= hGetContents
-writeUTF fname s = withUTF fname WriteMode (flip hPutStr s)
--}
 
 data Opt = Opt
     { optHelp         :: Bool
     , optHandleIn     :: IO Handle -> IO Handle
     , optHandleOut    :: ((Handle -> IO ()) -> IO ()) -> (Handle -> IO ()) -> IO ()
-    , optTermOut      :: Term -> Term
-    , optTermPrint    :: Term -> String
+    , optTermOut      :: (DeltaEnv,Gamma,Term,Term) -> (DeltaEnv,Gamma,Term,Term)
+    , optTermPrint    :: (DeltaEnv,Gamma,Term,Term) -> String
     , optStringOut    :: String -> String
     }
 
@@ -61,8 +36,9 @@ defaultOpts = Opt
     { optHelp         = False
     , optHandleIn     = makeInpUTF
     , optHandleOut    = makeOutUTF
-    , optTermOut      = simp
-    , optTermPrint    = printOut--printInd 0 []
+    , optTermOut      = \(d,g,t,goalt)->(d,g,simp t,simp goalt)
+    , optTermPrint    = \(d,g,t,goalt)->(unlines $
+    {-map show d++[]:-}map show g++[]:[printOut t]++[]:"goal:":[show goalt])--printInd 0 []
     , optStringOut    = ununicode
     }
 
@@ -80,9 +56,17 @@ options =
             optHandleOut=id}))
         "don't try to read unicode input"
     , Option ['r'] []
-        (NoArg (\opts -> opts{optTermOut=flip proc [].optTermOut opts}))
+        (NoArg (\opts -> opts{optTermOut = (\(d,g,t,gt)->(d,g,
+                  flip proc (foldl1 union (freeVars gt:map (freeVarsOfTy.snd.snd) g)) t
+                  ,gt)) . optTermOut opts}))
         "apply the unfold reduction to output"
     ]
+
+applyOpts :: Opt -> String -> IO Handle -> ((Handle -> IO ()) -> IO ()) -> IO ()
+applyOpts opt fname inh out = run fname
+    (optHandleIn opt inh>>=hGetContents)
+    (optHandleOut opt out . flip hPutStrLn
+        . optStringOut opt . optTermPrint opt . optTermOut opt)
 
 usage handle = getProgName >>= hPutStrLn handle . flip usageInfo options .
   (\n-> unlines
@@ -92,11 +76,6 @@ usage handle = getProgName >>= hPutStrLn handle . flip usageInfo options .
      "If filenames are not given, uses standard input/output",
      ""])
 
-applyOpts :: Opt -> String -> IO Handle -> ((Handle -> IO ()) -> IO ()) -> IO ()
-applyOpts opt fname inh out = run fname
-    (optHandleIn opt inh>>=hGetContents)
-    (optHandleOut opt out . flip hPutStrLn
-        . optStringOut opt . optTermPrint opt . optTermOut opt)
 
 
 main :: IO ()
@@ -121,17 +100,17 @@ makeInpUTF = (<$* hSetUTF8)
 makeOutUTF :: ((Handle -> IO ()) -> IO ()) -> (Handle -> IO ()) -> IO ()
 makeOutUTF out operation = out (\ h -> hSetUTF8 h >> operation h)
 
-run :: String -> IO String -> (Term -> IO ()) -> IO ()
+run :: String -> IO String -> ((DeltaEnv,Gamma,Term,Term) -> IO ()) -> IO ()
 run fname inp out = do --io monad
     s<-inp
     case (do -- Either monad (Exceptions)
         (delta,dd,goal) <- parseFile fname s
         -- checktype dd
         prog <- transformProg delta dd
-        res <- runMf (do --Mfresh
+        runMf (do --Mfresh
           (d2,g,c1) <- inferProg delta prog
-          (d3,c2,ty) <- infer g goal
-          return$return (aand c1 c2))
-        return res) of
+          (d3,c2,BoolT s) <- infer g goal
+          return $ return (d2++d3,g,(aand c1 c2),s))
+        ) of
         Right a -> out a
         Left e -> hPutStrLn stderr e

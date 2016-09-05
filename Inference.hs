@@ -14,6 +14,8 @@ import Control.Applicative
 
 import Tools
 
+
+--flattens a type enviroment into a sort environment
 flatenv :: Gamma -> DeltaEnv
 flatenv = map (\(x,(_,ty))->(x, flat ty))
 

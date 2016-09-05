@@ -31,11 +31,14 @@ printOut = printLong.simp.stripQuantifiers
 
 pprint = putStrLn.printLong.simp.stripQuantifiers
 
-type Clause = (Term,([String],String))
+
 
 -- given a conjunctions of implications, apply the unfold simplification
 -- do not unfold the other variables given
 
+type Clause = (Term,([String],String))
+
+--apply the unfold simplification to a term
 proc :: Term -> [Variable] -> Term
 proc t preserved = unpreproc $ f preserved [] ks
     where (ks,vss) = preproc t
@@ -57,7 +60,7 @@ preproc (Apply (Constant "∀") (Lambda x s t)) = (ks,(x,s):vs)
 preproc x = error (show x)
 
 
--- Assumes the input list of clauses contains at most 1 instance of each variable as a head
+-- apply the unfold simplification to a term in the form of a list of clauses
 f :: [Variable] -> [Clause] -> [Clause] -> [Clause]
 f vs ks [] = ks
 f vs ks1 ((body,(params,headvar)):ks2) = if headvar `elem` vs || headvar `elem` freeVars body

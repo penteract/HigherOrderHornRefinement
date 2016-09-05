@@ -56,7 +56,7 @@ occursIn x (Constant _) = False
 occursIn x (Apply a b) = x `occursIn` a || x `occursIn` b
 occursIn x (Lambda y _ t) = x/=y && x `occursIn` t
 
---does not yet do sort checking
+
 transformProg :: DeltaEnv -> [Term] -> Either String [(Variable,Term)] --this is called (| |) in the paper
 transformProg d ts = errorPart "Transformation" $ do
     txsys <- mapM split ts

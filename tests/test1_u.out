@@ -1,3 +1,6 @@
+("add",([],x_0:int->x_1:int->x_2:int->bool[x_3 x_2 x_1 x_0]))
+("iter",([],(x_4:int->x_5:int->x_6:int->bool[x_7 x_6 x_5 x_4])->x_8:int->x_9:int->bool[x_10 x_9 x_8]))
+
 x_30 = x_28 + x_29 ⇒ x_3 x_30 x_29 x_28
 n <= 0 ⇒ x_17 r n
 r = 0 ⇒ x_18 r n
@@ -16,3 +19,7 @@ x_10 r n ⇒ x_38 r n
 n > r ⇒ x_39 r n
 x_38 x_43 n ∧ x_39 x_43 n ⇒ x_37 n x_43
 (∃x:int.x_37 x_44 x) ⇒ x_36 x_44
+
+goal:
+∃x:int.x_36 x
+

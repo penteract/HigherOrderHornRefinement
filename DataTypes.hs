@@ -61,10 +61,21 @@ getQuants (Apply (Constant "∀") (Lambda x s t)) = ((x,s):vss, t1) where (vss,t
 getQuants x = ([],x)
 
 freeVars :: Term -> [Variable]
-freeVars (Variable v) = [v]
+freeVars (Variable x) = [x]
 freeVars (Constant _) = []
 freeVars (Apply t1 t2) = union (freeVars t1) (freeVars t2)
 freeVars (Lambda x s t) = filter (/=x) $ freeVars t
+
+freeVarsOfTy :: MonoType -> [Variable]
+freeVarsOfTy = freeVarsOfTy' []
+
+freeVarsOfTy' :: [Variable] -> MonoType -> [Variable]
+freeVarsOfTy' xs IntT = []
+freeVarsOfTy' xs (BoolT t) = freeVars t \\ xs
+freeVarsOfTy' xs (ArrowT x t1 t2) = union x1s x2s
+    where x1s = freeVarsOfTy' xs t1
+          x2s = freeVarsOfTy' (x:xs) t2
+
 
 --symbols
 logicalConstants = ["true","false"]

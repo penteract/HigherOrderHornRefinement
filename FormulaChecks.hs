@@ -3,6 +3,7 @@ module FormulaChecks
 
 import DataTypes
 
+-- gets the sort of a constant
 getSort :: String -> Maybe Sort -> DeltaEnv -> Either String Sort
 getSort "∀" (Just (Arrow sigma Bool)) env = Right $ Arrow (Arrow sigma Bool) Bool
 getSort "∀" _ env =  Left "body of quantifier should be boolean"
@@ -12,7 +13,7 @@ getSort s hint env = case lookup s env of
                           Just t -> Right t
                           Nothing -> Left ("unknown constant: "++s)--could assume here that s is a constraint
 
-          
+
 isRelational :: Sort -> Bool
 isRelational Bool = True
 isRelational (Arrow Int rho) = isRelational rho
@@ -20,6 +21,8 @@ isRelational (Arrow r1 r2) = isRelational r1 && isRelational r2
 isRelational _ = False
             
 
+
+--Checks the sort of a term, given an environment
 checkSort :: DeltaEnv -> Term -> Either String ()
 checkSort env t = getsort' (env++ilaEnv) Nothing t >> Right ()
 
