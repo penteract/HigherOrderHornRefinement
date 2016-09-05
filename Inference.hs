@@ -14,6 +14,8 @@ import Control.Applicative
 
 import Tools
 
+-- See section 6 (Type inference) of the Paper. This is an implementation of the inference relations defined there.
+
 
 --flattens a type enviroment into a sort environment
 flatenv :: Gamma -> DeltaEnv

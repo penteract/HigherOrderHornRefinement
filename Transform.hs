@@ -6,6 +6,8 @@ import Tools
 import FormulaChecks(checkSort)
 import Data.Maybe(fromJust)
 
+--Based on section 4 of the paper.
+
 transform d t = errorPart "Transformation" $ transform' d t
 
 transform' :: DeltaEnv -> Term -> Either String (String,Term)
@@ -19,7 +21,9 @@ transform' e (Apply (Apply (Constant "⇒") a) b) = do
             "expected "++show (length ss)]
         else Right (vb,foldr (\ (v,s) term -> (Lambda v s term)) a (zip vs ss))
 transform' _ _ = Left "Bad format"
-    
+
+-- turns `P y z => X y z` into (`P x y`,(["y","z"],"X"))
+-- possibly returns an error
 split ::Term -> Either String (Term,([String],String))
 split t = do
     let (vss,t1) = getQuants t
@@ -31,6 +35,7 @@ split' ::Term -> Either String (Term,([String],String))
 split' (Apply (Apply (Constant "⇒") a) b) = vlist b >>= return . (,) a
 split' _ = Left "not in Horn clause format"
 
+-- given `X y z`, returns (["y","z"],"X")
 vlist :: Term -> Either String ([String],String)
 vlist = vlist' []
 
@@ -39,6 +44,7 @@ vlist' vs (Variable b) = Right (vs,b)
 vlist' vs (Apply a (Variable v)) = vlist' (v:vs) a
 vlist' vs x = Left ("bad RHS: "++show x)
 
+-- given `s1->s2->Bool` returns ([s1,s2],Bool)
 slist :: Sort -> Either String ([Sort],Sort)
 slist Bool = Right ([],Bool)
 slist (Arrow a b) = do
@@ -46,7 +52,7 @@ slist (Arrow a b) = do
     Right (a:as,x)
 slist Int = Left "Non-relational sort"
 
-    
+-- transforms a list of clauses, only used in tests
 checkHorn :: DeltaEnv -> [Term] -> Either String [(String,Term)]
 checkHorn e = mapM (transform e)
 
@@ -56,7 +62,8 @@ occursIn x (Constant _) = False
 occursIn x (Apply a b) = x `occursIn` a || x `occursIn` b
 occursIn x (Lambda y _ t) = x/=y && x `occursIn` t
 
-
+-- Transforms a program as given in Section 4(Reduction to program evaluation) of the paper
+-- turns foralls into lambdas and combines clauses with the same head
 transformProg :: DeltaEnv -> [Term] -> Either String [(Variable,Term)] --this is called (| |) in the paper
 transformProg d ts = errorPart "Transformation" $ do
     txsys <- mapM split ts

@@ -1,6 +1,7 @@
 module Tools
     where
 
+-- helper function for making strings nicely
 (%) :: String -> [String] -> String
 (%) s [] = s
 (%) ('{':'}':s) (x:xs) = x++(s%xs)

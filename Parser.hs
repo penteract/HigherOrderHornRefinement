@@ -35,7 +35,8 @@ ununicode s= legiblise s ll ll
 cannonicals :: [(String,String)]
 cannonicals = ll ++[ ("≤","<="),("−","-"),("→","->")]
 
---Parser    
+--Parser
+---------------
 
 --setup 
 
@@ -197,6 +198,9 @@ strip (c:rest) = c:strip' rest
 strip' (("\n",NewLine,p):rest) = ("\n",NewLine,p) : strip rest
 strip' x = strip x
 
+
+
+
 --functions to help display the result of the parser 
 
 fromParse (Left x) = Left $ show x
@@ -210,8 +214,6 @@ fromEither :: Either a a -> a
 fromEither (Left x) = x
 fromEither (Right x) = x
 
-
-
 qshow s = putStrLn $ fromEither (tknsr2 s >>= (\ x-> fromParse (
             runParser parser () "" x >>= return.concat.map (++"\n").map prnt)))
 qshowl s = putStrLn $ ununicode $ fromEither (tknsr2 s >>= (\ x-> fromParse (
@@ -219,6 +221,7 @@ qshowl s = putStrLn $ ununicode $ fromEither (tknsr2 s >>= (\ x-> fromParse (
 qshowl2 s = putStrLn $ ununicode $ fromEither (tknsr2 s >>= (\ x-> fromParse (
             runParser parser () "" x >>= return.concat.map (++"\n").map printt)))
 
+qp :: String -> Term
 qp = fromRight . runParser formula () "" . fromRight.tknsr2
             
 runp s=  tknsr2 s >>= fromParse. runParser parser () "" 

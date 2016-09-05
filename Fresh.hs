@@ -2,7 +2,7 @@ module Fresh(freshVar,freshRel,freshTy,freshEnv,
     fromM,Mfresh)
     where
 
---Implements the judgements freshVar, freshTy and freshRel given in the paper
+--Implements the judgements freshVar, freshTy and freshRel given in section 6 (Type inference) the paper
 
 
 import DataTypes
@@ -13,6 +13,8 @@ import Control.Applicative
 
 newtype Mfresh a = Mfresh {fromM :: (Int -> (a,Int))}
 
+
+-- a state monad for keeping track of fresh variable names
 instance Monad Mfresh where
     return x = Mfresh (\n->(x,n))
     (>>=) (Mfresh xm) f = Mfresh (\n->let (x,m) = xm n in fromM (f x) m)

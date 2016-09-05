@@ -4,6 +4,8 @@ import Data.Maybe(fromJust,fromMaybe)
 import Data.List
 import Tools
 
+--Datatype definitions
+---------------
 data Sort = Arrow Sort Sort
           | Int | Bool
     deriving (Eq)
@@ -36,12 +38,17 @@ type DeltaEnv = [(Variable,Sort)]
 type Gamma = [(Variable,Scheme)]
 
 
+--functions for working with DataTypes
+---------------
+
+--Gives the sort corresponding to a monotype
 flat :: MonoType -> Sort
 flat (ArrowT _ a b) = Arrow (flat a) (flat b)
 flat IntT = Int
 flat (BoolT _) = Bool
 
-
+-- replaces all unbound occurences of a variable in a MonoType
+-- this affects instances of Bool<t>
 replaceInMT :: [(Variable,Term)] -> MonoType -> MonoType
 replaceInMT rs IntT = IntT
 replaceInMT rs (BoolT t) = BoolT (replaceInTerm rs t)
@@ -56,10 +63,12 @@ replaceInTerm rs (Lambda x s t) = --may cause problems if a variable in rs becom
 replaceInTerm rs (Variable v) = fromMaybe (Variable v) (lookup v rs)
 replaceInTerm rs (Constant c) = (Constant c)
 
+-- separate leading quantifiers from a term
 getQuants :: Term -> ([(Variable,Sort)],Term)
 getQuants (Apply (Constant "∀") (Lambda x s t)) = ((x,s):vss, t1) where (vss,t1) = getQuants t
 getQuants x = ([],x)
 
+--List the free variables in a term
 freeVars :: Term -> [Variable]
 freeVars (Variable x) = [x]
 freeVars (Constant _) = []
@@ -78,6 +87,7 @@ freeVarsOfTy' xs (ArrowT x t1 t2) = union x1s x2s
 
 
 --symbols
+---------------
 logicalConstants = ["true","false"]
 
 logicalUnary = ["¬"]
@@ -103,7 +113,9 @@ ilaEnv = zip ilaOps (repeat (Arrow Int . Arrow Int $ Int)) ++
 
 
 --printing functions
+---------------
 
+--prints in detail
 printt :: Term -> String
 printt (Variable v) = v
 printt (Constant c) = c
@@ -167,14 +179,12 @@ prnty' b (ArrowT "_" t1 t2) =
 prnty' b (ArrowT x t1 t2) =
     (if b then parise else id) (x++":"++prnty' True t1 ++ "->" ++ prnty' False t2)
 
-
 opsByPrec = map return logicalBinary ++ [logicalUnary,ilaRels,ilaOps]
 getprec = getprec' 1 opsByPrec
 getprec' n [] = []
 getprec' n (ops:rest) = map (flip (,) n) ops ++ getprec' (n+1) rest
 getprec2 = foldl (++) [] (map (uncurry $ map. flip (,)) (zip [1..] opsByPrec))
 maxPrec = length opsByPrec + 1
-
 
 printLong :: Term -> String --prints conjunctive terms on separate lines
 printLong (Apply (Apply (Constant "∧") t1) t2) = printLong t1 ++ '\n':printLong t2
