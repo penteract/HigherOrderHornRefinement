@@ -1,4 +1,4 @@
-module Transform(transform,checkHorn,transformProg,vlist,split)
+module Transform(transform,checkHorn,transformProg,vlist,split,occursIn)
     where
 
 import DataTypes

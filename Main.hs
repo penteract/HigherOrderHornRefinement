@@ -38,7 +38,7 @@ defaultOpts = Opt
     , optHandleOut    = makeOutUTF
     , optTermOut      = \(d,g,t,goalt)->(d,g,simp t,simp goalt)
     , optTermPrint    = \(d,g,t,goalt)->(unlines $
-      [printOut t]++"":"goal:":[show goalt])--printInd 0 []
+      [printOut t,"","goal:",show goalt])--printInd 0 []
     , optStringOut    = ununicode
     }
 
@@ -56,13 +56,17 @@ options =
             optHandleOut=id}))
         "don't try to read unicode input"
     , Option ['r'] []
-        (NoArg (\opts -> opts{optTermOut = (\(d,g,t,gt)->(d,g,
-                  flip proc (foldl1 union (freeVars gt:map (freeVarsOfTy.snd.snd) g)) t
-                  ,gt)) . optTermOut opts}))
+        (NoArg (\opts -> opts{optTermOut = (\(d,g,t,gt)->
+            let t2 = proc t (foldl1 union (freeVars gt:map (freeVarsOfTy.snd.snd) g)) in
+                (filter ((`occursIn` t2) . fst) d,g,t2,gt)) . optTermOut opts}))
         "apply the unfold reduction to output"
     , Option ['t'] []
-        (NoArg (\opts -> opts{optTermPrint = (\(d,g,t,gt)-> unlines $ map show g++"":[optTermPrint opts (d,g,t,gt)])}))
+        (NoArg (\opts -> opts{optTermPrint = (\(d,g,t,gt)-> unlines $ map show d++"":[optTermPrint opts (d,g,t,gt)])}))
         "Output additional information about types"
+    , Option ['z'] []
+        (NoArg (\opts -> opts{optTermPrint = (\(d,g,t,goalt)->unlines $
+            [show d,optTermPrint opts (d,g,t,goalt)])}))
+        "Output in SMT-LIB format for Z3 (under construction)"
     ]
 
 applyOpts :: Opt -> String -> IO Handle -> ((Handle -> IO ()) -> IO ()) -> IO ()

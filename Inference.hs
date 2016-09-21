@@ -32,7 +32,7 @@ getTyOfConst c
         ([("X",Bool)],
          ArrowT "_" (BoolT (qp "X")) $ BoolT (qp ("{} X"%[c])))
     | c `elem` logicalQuantifiers = -- what if it's not quantifying over ints?
-        ([("X",Bool)],
+        ([("X",Arrow Int Bool)],
             ArrowT "_" (ArrowT "x" IntT (BoolT $ qp "X x") ) (BoolT $ qp ("{} x:int.X x"%[c])))
     | all isDigit c = ([],IntT)
 
@@ -60,14 +60,14 @@ infer g (Apply t1 t2) = do
               )
     (d2,c2,ty2) <- infer g t2
     c3 <- inferSub ty2 ty1
-    return (d1, aand (aand c1 c2) c3, replaceInMT [(x,t2)] ty) --(IApp)
+    return (d1++d2, aand (aand c1 c2) c3, replaceInMT [(x,t2)] ty) --(IApp)  (paper currently uses d1 rather than d1++d2, but this works better)
 infer g (Lambda x Int t) = do
     (d1,c,ty) <- infer ((x,([],IntT)):g) t
     return (d1,aforall x Int c,ArrowT x IntT ty)--(IProd)
 infer g (Lambda x s t) = do
-        (ty1,d1) <- freshTy (flatenv g) s
-        (d2,c,ty2) <- infer ((x,([],ty1)):g) t
-        return (d2++d1,c,ArrowT "_" ty1 ty2) --(IArrow)
+    (ty1,d1) <- freshTy (flatenv g) s
+    (d2,c,ty2) <- infer ((x,([],ty1)):g) t
+    return (d1++d2,c,ArrowT "_" ty1 ty2) --(IArrow)
 
 inferSub :: MonoType -> MonoType -> Mfresh Term
 inferSub IntT IntT = return $ Constant "true"

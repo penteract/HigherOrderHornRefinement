@@ -2,7 +2,7 @@ module Simplify(stripQuantifiers,simp,printOut,pprint,proc)
     where
 
 import DataTypes
-import Transform(vlist)
+import Transform(vlist,occursIn)
 
 --import Data.Maybe(fromJust,fromMaybe)
 import Data.List
@@ -40,11 +40,11 @@ type Clause = (Term,([String],String))
 
 --apply the unfold simplification to a term
 proc :: Term -> [Variable] -> Term
-proc t preserved = unpreproc $ f preserved [] ks
+proc t preserved = unpreproc (f preserved [] ks) vss
     where (ks,vss) = preproc t
 
-unpreproc :: [Clause] -> Term
-unpreproc = foldl1 aand . map (\ (t,(xs,v)) ->
+unpreproc :: [Clause] -> [(Variable,Sort)] -> Term
+unpreproc = foldr (\ (v,s) t -> if v `occursIn` t then aforall v s t else t) . foldl1 aand . map (\ (t,(xs,v)) ->
   aimplies t (foldl Apply (Variable v) (map Variable xs)))
 
 --get into a reasonably nice format
