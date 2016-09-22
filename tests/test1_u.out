@@ -8,15 +8,15 @@ x_10 p (n - 1) ⇒ x_23 p r n
 x_22 p r n ∧ x_23 p r n ⇒ x_20 p r n
 x_14 r p n ⇒ x_21 p r n
 x_20 x_27 r n ∧ x_21 x_27 r n ⇒ x_19 r n x_27
-(∃x:int.x_19 r n x) ⇒ x_16 r n
+(∃x:Int.x_19 r n x) ⇒ x_16 r n
 x_7 x_33 x_32 x_31 ⇒ x_14 x_33 x_32 x_31
 x_15 x_35 x_34 ∨ x_16 x_35 x_34 ⇒ x_10 x_35 x_34
 x_3 x_42 x_41 x_40 ⇒ x_7 x_42 x_41 x_40
 x_10 r n ⇒ x_38 r n
 n > r ⇒ x_39 r n
 x_38 x_43 n ∧ x_39 x_43 n ⇒ x_37 n x_43
-(∃x:int.x_37 x_44 x) ⇒ x_36 x_44
+(∃x:Int.x_37 x_44 x) ⇒ x_36 x_44
 
 goal:
-∃x:int.x_36 x
+∃x:Int.x_36 x
 

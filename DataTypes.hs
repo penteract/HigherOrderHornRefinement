@@ -131,8 +131,8 @@ prns :: Sort -> String
 prns = prns' False
 
 prns' :: Bool -> Sort -> String
-prns' _ Int = "int"
-prns' _ Bool = "bool"
+prns' _ Int = "Int"
+prns' _ Bool = "Bool"
 prns' True x = parise $ prns' False x
 prns' False (Arrow a b) = prns' True a++"->"++prns' False b
 
@@ -147,8 +147,8 @@ prnt' :: Int -> Int -> Term -> String
 prnt' lp rp (Apply (Apply (Constant c) t1) t2)
     | c `elem` binaryOps = (\ (f,l,r) ->  f $ prnt' l p t1++" "++c++" "++prnt' p r t2)
                     (if p<=lp || p<rp then (parise,0,0) else (id,lp,rp))
-        where p = fromJust $ lookup c getprec 
-prnt' lp rp (Apply (Constant c) t) 
+        where p = fromJust $ lookup c getprec
+prnt' lp rp (Apply (Constant c) t)
     | c `elem` logicalUnary = (let p=fromJust $ lookup c getprec in
                                    if p<rp then parise (c++prnt' p 0 t)
                                       else c++prnt' p rp t)
@@ -160,7 +160,7 @@ prnt' lp rp (Lambda a s body)  = (if rp==0 then id else parise) $
                                 ("λ"++a++":"++prns s++"."++prnt' 0 0 body)
 prnt' lp rp (Variable v)  = v
 prnt' lp rp (Constant c)  = c
-prnt' lp rp (Apply a b)  = if maxPrec<=lp 
+prnt' lp rp (Apply a b)  = if maxPrec<=lp
                               then parise (prnt' 0 maxPrec a ++ " " ++prnt' maxPrec 0 b)
                               else  prnt' lp maxPrec a ++ " " ++prnt' maxPrec rp b
 
@@ -172,8 +172,8 @@ prnsch (ss,t) = "A "++intercalate " " (map (\(x,y)->x++":"++prns y) ss) ++ "." +
 prnty :: MonoType -> String
 prnty = prnty' False
 
-prnty' _ IntT = "int"
-prnty' _ (BoolT s) = "bool["++prnt s++"]"
+prnty' _ IntT = "Int"
+prnty' _ (BoolT s) = "Bool["++prnt s++"]"
 prnty' b (ArrowT "_" t1 t2) =
     (if b then parise else id) (prnty' True t1 ++ "->" ++ prnty' False t2)
 prnty' b (ArrowT x t1 t2) =

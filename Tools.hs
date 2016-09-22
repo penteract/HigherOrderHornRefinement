@@ -22,3 +22,7 @@ infixl 1 `unless`
 
 fromRight :: Either a b -> b
 fromRight (Right x) = x
+
+
+xor True x = not x
+xor False x = x

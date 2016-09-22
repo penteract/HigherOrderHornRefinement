@@ -88,5 +88,5 @@ inferProg d prog= do
     (g,d') <- freshEnv d
     (ds,cs,tys) <- unzip3 <$> mapM (infer g) ts
     c2s <- sequence (zipWith inferSub tys (map(snd.fromJust.flip lookup g) vs))
-    return (concat ds,g,foldl1 aand (zipWith aand cs c2s))
+    return (d'++concat ds,g,foldl1 aand (zipWith aand cs c2s))
     where (vs,ts) = unzip prog
