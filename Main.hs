@@ -15,6 +15,7 @@ import Data.List
 import Control.Applicative--((<*>))
 import Simplify
 import Tools
+import Printing(smtPrint)
 
 runMf = fst.flip fromM 0
 
@@ -62,68 +63,12 @@ options =
                 (filter ((`occursIn` t2) . fst) d,g,t2,gt)) . optTermOut opts}))
         "apply the unfold reduction to output"
     , Option ['t'] []
-        (NoArg (\opts -> opts{optTermPrint = (\(d,g,t,gt)-> unlines $ map show d++"":[optTermPrint opts (d,g,t,gt)])}))
+        (NoArg (\opts -> opts{optTermPrint = (\(d,g,t,gt)-> unlines $ map show g++map show d++"":[optTermPrint opts (d,g,t,gt)])}))
         "Output additional information about types"
     , Option ['z'] []
         (NoArg (\opts -> opts{optTermPrint = smtPrint}))
         "Output in SMT-LIB format for Z3 (under construction)"
     ]
-
-smtPrint:: (DeltaEnv,Gamma,Term,Term) -> String
-smtPrint (d,g,t,gt) = legiblise (unlines [
-    unlines $ map smtDecFun d,
-    smtTerm' (pullOutAllQuantifiers True t),
-    let (t,qs)=(pullOutAllQuantifiers False gt) in
-        smtTerm' (Apply (Constant "¬") t, qs),
-    "(check-sat)"
-    ]) smtl smtl
-smtl = [ ("and","∧"), ("=>","⇒"), ("or","∨"), ("not","¬")]
-
-smtDecFun :: (Variable,Sort) -> String
-smtDecFun (v,s) = "(declare-fun {} ({}) {})" % [v, intercalate " " $ map show ss, show sb]
-    where (ss,sb) = fromRight $ slist s
-
-pullOutAllQuantifiers :: Bool -> Term -> (Term,[(String,Sort)])
-pullOutAllQuantifiers b (Apply (Apply (Constant c) t1) t2)
-    | c `elem` ["⇒","∨","∧"] = (Apply (Apply (Constant c) t1') t2', vs1 `union` vs2)
-    -- | otherwise = error (c++show t1 ++ show t2)
-        where (t1',vs1) = pullOutAllQuantifiers (b `xor` (c=="⇒")) t1
-              (t2',vs2) = pullOutAllQuantifiers b t2
-pullOutAllQuantifiers b (Apply (Constant "¬") t) = ((Apply (Constant "¬") t'),vs)
-    where (t',vs) = pullOutAllQuantifiers (not b) t
-pullOutAllQuantifiers True (Apply (Constant "∀") t) = case t of
-        (Lambda x ty body) -> fmap ((x,ty):) $ pullOutAllQuantifiers True body
-        _ -> error "bad quantifier"
-pullOutAllQuantifiers False (Apply (Constant "∀") t) = case t of
-        _ -> error "bad quantifier"
-pullOutAllQuantifiers False (Apply (Constant "∃") t) = case t of
-        (Lambda x ty body) -> fmap ((x,ty):) $ pullOutAllQuantifiers False body
-        _ -> error "bad quantifier"
-pullOutAllQuantifiers True (Apply (Constant "∃") t) = case t of
-        _ -> error "bad quantifier"
-pullOutAllQuantifiers b t = (t,[])
-
-smtTerm' :: (Term,[(String,Sort)]) -> String
-smtTerm' (t,[]) = "(assert {})" % [smtTerm t]
-smtTerm' (t,d) = "(assert (forall ({}) {}))" %
-    [concatMap (\(x,y) -> "({} {})"%[x,show y]) d, smtTerm t]
-
-smtTerm :: Term -> String
-smtTerm (Apply (Apply (Constant c) t1) t2)
-    | c `elem` binaryOps = "({} {} {})"%[c, smtTerm t1, smtTerm t2]
-smtTerm (Apply (Constant c) t)
-    | c `elem` logicalUnary = "({} {})"%[c, smtTerm t]
-    | c `elem` logicalQuantifiers = case (c,t) of
-        ("∀",(Lambda x Int body)) -> "(forall (({} Int))\n  {})"%[x,smtTerm body]
-        --("∃",(Lambda x Int body)) -> "(therex (({} Int))  {})"%[x,smtTerm body]--
-        _ -> error "bad quantifier"
-smtTerm (Lambda a s body)  = error "unquantified lambda"
-smtTerm (Variable v)  = v
-smtTerm (Constant c)  = c
-smtTerm (Apply a b)  = "({} {})"% [smtApp a,smtTerm b]
-
-smtApp (Apply a b) = "{} {}"% [smtApp a,smtTerm b]
-smtApp x = smtTerm x
 
 applyOpts :: Opt -> String -> IO Handle -> ((Handle -> IO ()) -> IO ()) -> IO ()
 applyOpts opt fname inh out = run fname
