@@ -191,18 +191,26 @@ parseFile fname contents = do
         strip (c:rest) = c:strip' rest
         strip' (("\n",NewLine,p):rest) = ("\n",NewLine,p) : strip rest
         strip' x = strip x
+        
+fromParse (Left x) = Left $ show x
+fromParse (Right x) =  Right x
 
+
+qp :: String -> Term
+qp = fromRight . runParser formula () "" . fromRight.tknsr2
+
+{-
 strip [] = []
 strip (("\n",NewLine,_):rest) = strip rest
 strip (c:rest) = c:strip' rest
 strip' (("\n",NewLine,p):rest) = ("\n",NewLine,p) : strip rest
 strip' x = strip x
+-}
 
 
 
-
---functions to help display the result of the parser 
-
+--functions to help display the result of the parser (for debugging)
+{-
 fromParse (Left x) = Left $ show x
 fromParse (Right x) =  Right x
 
@@ -221,11 +229,10 @@ qshowl s = putStrLn $ ununicode $ fromEither (tknsr2 s >>= (\ x-> fromParse (
 qshowl2 s = putStrLn $ ununicode $ fromEither (tknsr2 s >>= (\ x-> fromParse (
             runParser parser () "" x >>= return.concat.map (++"\n").map printt)))
 
-qp :: String -> Term
-qp = fromRight . runParser formula () "" . fromRight.tknsr2
             
 runp s=  tknsr2 s >>= fromParse. runParser parser () "" 
 
 
 qt s = fromRight $ (runParser parser () "" (fromRight $ tknsr2 s))
 qs s = fromRight $ (runParser sort () "" (fromRight $ tknsr2 s))
+-}

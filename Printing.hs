@@ -1,21 +1,5 @@
-module Printing where
-{-}
-import System.Environment
-import System.IO
-import System.Console.GetOpt
+module Printing(printOut,pprint,printInd,smtPrint) where
 
-import Fresh(fromM)
-import Parser
-import Transform
-import FormulaChecks
-import Inference(inferProg,infer)
-import DataTypes
-import Data.Maybe(fromJust)
-import Data.List
-import Control.Applicative--((<*>))
-import Simplify
-import Tools
--}
 import DataTypes
 import Data.List
 import Simplify
@@ -25,15 +9,20 @@ import Transform
 
 base :: Term -> Variable
 base (Apply a b) = base a
+
 base (Variable x) = x
 
-smtPrint :: (DeltaEnv,Gamma,Term,Term) -> String
-smtPrint (d,g,t,gt) = legiblise (unlines [
+smtPrint :: Bool -> (DeltaEnv,Gamma,Term,Term) -> String
+smtPrint isNew (d,g,t,gt) = legiblise (unlines [
+    ";For use with Z3, version" ++ if isNew then "4.4.2 or later" else "4.4.1 or earlier",
+    "(get-info :version)",
+    "(echo \"version should be "++if isNew then ">=4.4.2" else "<=4.4.1"++"\")",
+    "(echo \"a result of unsat means that there is a model for the program clauses in which the goal clause does not hold\")",
     unlines $ map smtDecFun d,
     smtTerm' t,
     --smtTerm' (pullOutAllQuantifiers True t),
     let (t,qs)=(pullOutAllQuantifiers False gt) in
-        "(query {} :print-certificate true)" % [base t]
+        "(query {} :print-certificate true)" % [if isNew then base t else '(':show t++")"]
     ]) smtl smtl
 smtl = [ ("and","∧"), ("=>","⇒"), ("or","∨"), ("not","¬")]
 
@@ -87,3 +76,18 @@ smtTerm (Apply a b)  = "({} {})"% [smtApp a,smtTerm b]
 
 smtApp (Apply a b) = "{} {}"% [smtApp a,smtTerm b]
 smtApp x = smtTerm x
+
+
+--prints conjunctive terms on separate lines and indents foralls
+printInd' :: Int -> [(Variable,Sort)] -> Term -> String
+printInd' n vss (Apply (Constant "∀") (Lambda x s t)) = printInd' n ((x,s):vss) t
+printInd' n (vs:vss) t = replicate n ' ' ++'∀':intercalate "," (map (\(v,s)->"{}:{}"%[v,show s])(vs:vss)) ++
+    "\n" ++ printInd' (n+2+2*length vss) [] t
+printInd' n [] (Apply (Apply (Constant "∧") t1) t2) =
+    printInd' n [] t1 ++ '\n':printInd' n [] t2
+printInd' n [] x = replicate n ' ' ++ prnt x
+
+
+printOut = printLong.simp.stripQuantifiers
+printInd = printInd' 0 []
+pprint = putStrLn.printLong.simp.stripQuantifiers

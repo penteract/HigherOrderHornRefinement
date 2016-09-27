@@ -15,7 +15,7 @@ import Data.List
 import Control.Applicative--((<*>))
 import Simplify
 import Tools
-import Printing(smtPrint)
+import Printing
 
 runMf = fst.flip fromM 0
 
@@ -40,7 +40,7 @@ defaultOpts = Opt
     , optHandleOut    = makeOutUTF
     , optTermOut      = \(d,g,t,goalt)->(d,g,simp t,simp goalt)
     , optTermPrint    = \(d,g,t,goalt)->(unlines $
-      [printOut t,"","goal:",show goalt])--printInd 0 []
+      [printOut t,"","goal:",show goalt])--printInd
     , optStringOut    = ununicode
     }
 
@@ -52,6 +52,10 @@ options =
     , Option ['u'] []
         (NoArg (\opts -> opts{optStringOut=id}))
         "output in unicode"
+    , Option ['l'] []
+        (NoArg (\opts -> opts{optTermPrint = \(d,g,t,goalt)->unlines $
+            [printInd t,"","goal:",show goalt]}))
+        "print output in a longer format"
     , Option ['n'] []
         (NoArg (\opts -> opts{
             optHandleIn=id,
@@ -65,9 +69,12 @@ options =
     , Option ['t'] []
         (NoArg (\opts -> opts{optTermPrint = (\(d,g,t,gt)-> unlines $ map show g++map show d++"":[optTermPrint opts (d,g,t,gt)])}))
         "Output additional information about types"
+    , Option ['y'] []
+        (NoArg (\opts -> opts{optTermPrint = smtPrint False}))
+        "Output in extended SMT-LIB format for Z3 (4.4.1 or earlier)"
     , Option ['z'] []
-        (NoArg (\opts -> opts{optTermPrint = smtPrint}))
-        "Output in SMT-LIB format for Z3 (under construction)"
+        (NoArg (\opts -> opts{optTermPrint = smtPrint True}))
+        "Output in extended SMT-LIB format for Z3 (4.4.2 or later)"
     ]
 
 applyOpts :: Opt -> String -> IO Handle -> ((Handle -> IO ()) -> IO ()) -> IO ()

@@ -1,4 +1,4 @@
-module Simplify(stripQuantifiers,simp,printOut,pprint,proc)
+module Simplify(stripQuantifiers,simp,proc)
     where
 
 import DataTypes
@@ -26,12 +26,6 @@ simplify t = t
 
 simp t = simp' t (simplify t) -- simp' <*> simplify
 simp' t t'= if t==t' then t else simp t'
-
-printOut = printLong.simp.stripQuantifiers
-
-pprint = putStrLn.printLong.simp.stripQuantifiers
-
-
 
 -- given a conjunctions of implications, apply the unfold simplification
 -- do not unfold the other variables given

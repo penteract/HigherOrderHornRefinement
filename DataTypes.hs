@@ -190,15 +190,7 @@ printLong :: Term -> String --prints conjunctive terms on separate lines
 printLong (Apply (Apply (Constant "∧") t1) t2) = printLong t1 ++ '\n':printLong t2
 printLong x = prnt x
 
---prints conjunctive terms on separate lines and indents foralls
-printInd :: Int -> [(Variable,Sort)] -> Term -> String
-printInd n vss (Apply (Constant "∀") (Lambda x s t)) = printInd n ((x,s):vss) t
-printInd n (vs:vss) t = replicate n ' ' ++'∀':intercalate "," (map (\(v,s)->"{}:{}"%[v,show s])(vs:vss)) ++
-    "\n" ++ printInd (n+2+2*length vss) [] t
-printInd n [] (Apply (Apply (Constant "∧") t1) t2) =
-    printInd n [] t1 ++ '\n':printInd n [] t2
-printInd n [] x = replicate n ' ' ++ prnt x
-
+--helpful constructors
 aand t1 t2 = (Apply (Apply (Constant "∧") t1) t2)
 aor t1 t2 = (Apply (Apply (Constant "∨") t1) t2)
 aforall x s t = (Apply (Constant "∀") (Lambda x s t))
