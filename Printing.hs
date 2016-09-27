@@ -1,4 +1,4 @@
-module Printing(printOut,pprint,printInd,smtPrint) where
+module Printing(printOut,pprint,printInd,smtPrint,smtPrint2) where
 
 import DataTypes
 import Data.List
@@ -16,7 +16,7 @@ smtPrint :: Bool -> (DeltaEnv,Gamma,Term,Term) -> String
 smtPrint isNew (d,g,t,gt) = legiblise (unlines [
     ";For use with Z3, version" ++ if isNew then "4.4.2 or later" else "4.4.1 or earlier",
     "(get-info :version)",
-    "(echo \"version should be "++if isNew then ">=4.4.2" else "<=4.4.1"++"\")",
+    "(echo \"version should be "++(if isNew then ">=4.4.2" else "<=4.4.1")++"\")",
     "(echo \"a result of unsat means that there is a model for the program clauses in which the goal clause does not hold\")",
     unlines $ map smtDecFun d,
     smtTerm' t,
@@ -91,3 +91,31 @@ printInd' n [] x = replicate n ' ' ++ prnt x
 printOut = printLong.simp.stripQuantifiers
 printInd = printInd' 0 []
 pprint = putStrLn.printLong.simp.stripQuantifiers
+
+
+
+
+
+smtPrint2:: (DeltaEnv,Gamma,Term,Term) -> String
+smtPrint2 (d,g,t,gt) = legiblise (unlines [
+    "(set-logic HORN)",
+    unlines $ map smtDecFun2 d,
+    smtTerm2' (pullOutAllQuantifiers True t),
+    let (t,qs)=(pullOutAllQuantifiers False gt) in
+        smtTerm2' (aimplies t (Constant "false"), qs),
+    "(echo \"a result of sat means that there is a model for the program clauses in which the goal clause does not hold\")",
+    "(check-sat)",
+    "(get-model)"
+    ]) smtl smtl
+
+smtDecFun2 :: (Variable,Sort) -> String
+smtDecFun2 (v,s) = "(declare-fun {} ({}) {})" % [v, intercalate " " $ map show ss, show sb]
+    where (ss,sb) = fromRight $ slist s
+
+        
+smtTerm2' :: (Term,[(String,Sort)]) -> String
+smtTerm2' (t,[]) = "(assert {})" % [smtTerm t]
+smtTerm2' (t,d) = unlines $ map (\ t -> "(assert (forall ({}) {}))" %
+    [concatMap (\(x,y) -> "({} {})"%[x,show y]) (filter ((`occursIn` t) . fst) d), smtTerm t]) ts
+    where
+        ts = deand t

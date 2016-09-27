@@ -50,3 +50,11 @@ The output consists of a list of first order Horn clauses of with heads of the f
 This represents a conjunction of clauses where the variables `a`, `b` and `c` are bound under universal quantifiers.
 
 There is another line giving a first order goal clause.
+
+##Use with z3
+The options -y and -z output in the SMT-LIB2 format with the extensions described in http://rise4fun.com/Z3/tutorial/fixedpoints.
+These work with z3 versions <=4.4.1 and >=4.4.2 respectively.
+
+The -x option outputs in unextended SMT-LIB format which works with all tested versions of Z3.
+It has not been tested with any SMT-LIB solvers other than Z3.
+Z3 version 4.4.2 produces more complicated output with this than with -z.

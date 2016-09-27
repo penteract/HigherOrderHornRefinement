@@ -69,6 +69,9 @@ options =
     , Option ['t'] []
         (NoArg (\opts -> opts{optTermPrint = (\(d,g,t,gt)-> unlines $ map show g++map show d++"":[optTermPrint opts (d,g,t,gt)])}))
         "Output additional information about types"
+    , Option ['x'] []
+        (NoArg (\opts -> opts{optTermPrint = smtPrint2}))
+        "Output SMT-LIB format"
     , Option ['y'] []
         (NoArg (\opts -> opts{optTermPrint = smtPrint False}))
         "Output in extended SMT-LIB format for Z3 (4.4.1 or earlier)"
