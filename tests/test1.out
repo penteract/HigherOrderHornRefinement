@@ -1,22 +1,22 @@
-x_30 = x_28 + x_29 => x_3 x_30 x_29 x_28
+x_31 = x_29 + x_30 => x_3 x_31 x_30 x_29
 n <= 0 => x_17 r n
 r = 0 => x_18 r n
 x_17 r n ^ x_18 r n => x_15 r n
-n > 0 => x_22 p r n
-x_14 x_26 x_25 x_24 => x_7 x_26 x_25 x_24
-x_10 p (n - 1) => x_23 p r n
-x_22 p r n ^ x_23 p r n => x_20 p r n
-x_14 r p n => x_21 p r n
-x_20 x_27 r n ^ x_21 x_27 r n => x_19 r n x_27
-(E x:Int.x_19 r n x) => x_16 r n
-x_7 x_33 x_32 x_31 => x_14 x_33 x_32 x_31
-x_15 x_35 x_34 \/ x_16 x_35 x_34 => x_10 x_35 x_34
-x_3 x_42 x_41 x_40 => x_7 x_42 x_41 x_40
-x_10 r n => x_38 r n
-n > r => x_39 r n
-x_38 x_43 n ^ x_39 x_43 n => x_37 n x_43
-(E x:Int.x_37 x_44 x) => x_36 x_44
+n > 0 => x_23 p r n
+x_14 x_27 x_26 x_25 => x_7 x_27 x_26 x_25
+x_10 p (n - 1) => x_24 p r n
+x_23 p r n ^ x_24 p r n => x_21 p r n
+x_14 r p n => x_22 p r n
+x_21 x_28 r n ^ x_22 x_28 r n => x_20 r n x_28
+(E x_19:Int.x_20 r n x_19) => x_16 r n
+x_7 x_34 x_33 x_32 => x_14 x_34 x_33 x_32
+x_15 x_36 x_35 \/ x_16 x_36 x_35 => x_10 x_36 x_35
+x_3 x_45 x_44 x_43 => x_7 x_45 x_44 x_43
+x_10 r n => x_41 r n
+n > r => x_42 r n
+x_41 x_46 n ^ x_42 x_46 n => x_40 n x_46
+(E x_39:Int.x_40 x_47 x_39) => x_38 x_47
 
 goal:
-E x:Int.x_36 x
+E x_37:Int.x_38 x_37
 

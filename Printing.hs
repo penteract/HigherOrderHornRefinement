@@ -22,12 +22,13 @@ smtPrint isNew (d,g,t,gt) = legiblise (unlines [
     smtTerm' t,
     --smtTerm' (pullOutAllQuantifiers True t),
     let (t,qs)=(pullOutAllQuantifiers False gt) in
-        "(query {} :print-certificate true)" % [if isNew then base t else '(':show t++")"]
+        (if isNew then "" else unlines $ map (\(x,Int) -> "(declare-var {} Int)" % [x]) qs) ++
+        ("(query {} :print-certificate true)" % [if isNew then base t else '(':prnt t++")"])
     ]) smtl smtl
 smtl = [ ("and","∧"), ("=>","⇒"), ("or","∨"), ("not","¬")]
 
 smtDecFun :: (Variable,Sort) -> String
-smtDecFun (v,s) = "(declare-rel {} ({}))" % [v, intercalate " " $ map show ss]
+smtDecFun (v,s) = "(declare-rel {} ({}))" % [v, intercalate " " $ map prns ss]
     where (ss,Bool) = fromRight $ slist s
 
 smtTerm' :: Term -> String
@@ -116,6 +117,6 @@ smtDecFun2 (v,s) = "(declare-fun {} ({}) {})" % [v, intercalate " " $ map show s
 smtTerm2' :: (Term,[(String,Sort)]) -> String
 smtTerm2' (t,[]) = "(assert {})" % [smtTerm t]
 smtTerm2' (t,d) = unlines $ map (\ t -> "(assert (forall ({}) {}))" %
-    [concatMap (\(x,y) -> "({} {})"%[x,show y]) (filter ((`occursIn` t) . fst) d), smtTerm t]) ts
+    [concatMap (\(x,y) -> "({} {})"%[x,prns y]) (filter ((`occursIn` t) . fst) d), smtTerm t]) ts
     where
         ts = deand t

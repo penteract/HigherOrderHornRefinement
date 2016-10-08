@@ -11,7 +11,7 @@ unsat
                     (not (<= x!2 0))
                     (= x!3 (+ (- 1) x!2))))))
     (or a!1 a!2)))
-(define-fun x_36 ((x!1 Int)) Bool
+(define-fun x_38 ((x!1 Int)) Bool
   (let ((a!1 (exists ((x!2 Int))
                (and (>= x!2 0) (<= (+ x!1 (* (- 1) x!2)) 0) (not (<= x!1 x!2)))))
         (a!2 (exists ((x!2 Int))

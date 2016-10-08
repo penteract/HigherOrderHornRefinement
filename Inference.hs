@@ -21,20 +21,22 @@ import Tools
 flatenv :: Gamma -> DeltaEnv
 flatenv = map (\(x,(_,ty))->(x, flat ty))
 
-getTyOfConst :: Constant -> Scheme
+getTyOfConst :: Constant -> Mfresh Scheme
 getTyOfConst c
-    | c `elem` ilaOps = ([],(ArrowT "_" IntT (ArrowT "_" IntT IntT)))
-    | c `elem` ilaRels = ([],ArrowT "x" IntT . ArrowT "y" IntT $ BoolT (qp ("x {} y"%[c])))
+    | c `elem` ilaOps = return ([],(ArrowT "_" IntT (ArrowT "_" IntT IntT)))
+    | c `elem` ilaRels = return ([],ArrowT "x_" IntT . ArrowT "y_" IntT $ BoolT (qp ("x_ {} y_"%[c])))
     | c `elem` logicalBinary =
-        ([("X",Bool),("Y",Bool)],
+        return ([("X",Bool),("Y",Bool)],
          ArrowT "_" (BoolT (qp "X")).ArrowT "_" (BoolT (qp "Y")) $ BoolT (qp ("X {} Y"%[c])))
     | c `elem` logicalUnary =
-        ([("X",Bool)],
+        return ([("X",Bool)],
          ArrowT "_" (BoolT (qp "X")) $ BoolT (qp ("{} X"%[c])))
     | c `elem` logicalQuantifiers = -- what if it's not quantifying over ints?
-        ([("X",Arrow Int Bool)],
-            ArrowT "_" (ArrowT "x" IntT (BoolT $ qp "X x") ) (BoolT $ qp ("{} x:int.X x"%[c])))
-    | all isDigit c = ([],IntT)
+        do
+        x <- freshVar
+        return ([("X",Arrow Int Bool)],
+            ArrowT "_" (ArrowT "x_" IntT (BoolT $ qp "X x_") ) (BoolT $ qp ("{} {}:int.X {}"%[c,x,x])))
+    | all isDigit c = return ([],IntT)
 
 
 infer :: Gamma -> Term -> Mfresh (DeltaEnv,Term,MonoType)
@@ -47,11 +49,10 @@ infer g (Variable v) = do
                           Nothing -> error (v++" not found")
         (vs,ss) = unzip targs
 infer g (Constant c) = do
+    (targs,ty) <- getTyOfConst c
+    let (vs,ss) = unzip targs
     (ts,ds) <- unzip <$> mapM (freshRel (flatenv g)) ss
     return (ds,Constant "true",replaceInMT (zip vs ts) ty)--(IConst)
-    where 
-        (targs,ty) = getTyOfConst c
-        (vs,ss) = unzip targs
 infer g (Apply t1 t2) = do
     aaa <- infer g t1
     (d1,c1,x,ty1,ty) <- return (case aaa of

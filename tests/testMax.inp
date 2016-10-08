@@ -1,0 +1,11 @@
+environment
+max : (int->int->int->bool)->int->int->int->int->bool
+f : int->int->int->bool;
+
+program
+( ∃ p : int. m w y p ∧ m p z r ) ⇒ max m w y z r
+w < y ∧ r = y ⇒ f w y r
+y ≤ w ∧ r = w ⇒ f w y r;
+
+goal
+∃ w,y,z,m,n:int. max f w y z m ∧ f w m n ∧ (m < n ∨ n < m)
