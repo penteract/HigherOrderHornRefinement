@@ -14,7 +14,7 @@ base (Variable x) = x
 
 smtPrint :: Bool -> (DeltaEnv,Gamma,Term,Term) -> String
 smtPrint isNew (d,g,t,gt) = legiblise (unlines [
-    ";For use with Z3, version" ++ if isNew then "4.4.2 or later" else "4.4.1 or earlier",
+    ";For use with Z3, version " ++ if isNew then "4.4.2 or later" else "4.4.1 or earlier",
     "(get-info :version)",
     "(echo \"version should be "++(if isNew then ">=4.4.2" else "<=4.4.1")++"\")",
     "(echo \"a result of unsat means that there is a model for the program clauses in which the goal clause does not hold\")",

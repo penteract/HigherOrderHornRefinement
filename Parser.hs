@@ -46,7 +46,7 @@ typeSymbols = ["->"]
 
 symbols :: [String]
 symbols = logicalSymbols ++ ilaOps ++ ilaRels++ typeSymbols
-    ++ ["(",")",":",".",",",";"]
+    ++ ["(",")",":",".",",",";","[","]"]
     -- ++ ["environment","program","goal"]
 
 cannonise :: Token -> Token
@@ -108,6 +108,24 @@ sort = chainr1 ((tok "int" >> return Int) <|> (tok "bool" >> return Bool) <|> pa
 vlist :: MyParser [Term]
 vlist = chainl1 (variable >>= return.return) (tok "," >> return (++))
 
+monotype :: MyParser MonoType
+monotype = chainr1 (
+           (do tok "bool"
+               tok "["
+               g <- formula
+               tok "]"
+               return $ BoolT g) <|>
+           (do (Variable x)<-variable
+               tok ":"
+               tok "Int"
+               tok "->"
+               ty <- monotype
+               return $ ArrowT x IntT ty)<|>
+           parens monotype)
+           (tok "->" >> return (ArrowT "_"))
+              
+              
+
 simpleTerm :: MyParser Term
 simpleTerm = parens formula
          <|> number
@@ -137,10 +155,18 @@ negation = (tok "¬" >> (quantified <|> negation) >>= return.(Apply (Constant "�
 
 
 quantified :: MyParser Term
-quantified = do q <- oneOf logicalQuantifiers
+quantified = try
+            (do q <- oneOf logicalQuantifiers
                 tvs <- tvlist
                 body <- formula
-                return $ fromtvlist q tvs body
+                return $ fromtvlist q tvs body) <|>
+            (do tok "∃"
+                (Variable v) <- variable
+                tok ":"
+                ty <- monotype
+                tok "."
+                body <- formula
+                return (ExistsT v ty body)) --Really don't want to do reduction here
 
 formula :: MyParser Term
 formula = quantified

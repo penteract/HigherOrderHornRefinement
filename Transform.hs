@@ -1,10 +1,12 @@
-module Transform(transform,checkHorn,transformProg,vlist,slist,split,occursIn)
+module Transform(transform,checkHorn,transformProg,vlist,slist,split,occursIn, elim)
     where
 
+import Fresh(Mfresh,freshVar)
 import DataTypes
 import Tools
 import FormulaChecks(checkSort)
 import Data.Maybe(fromJust)
+import Control.Monad(liftM,liftM2)
 
 --Based on section 4 of the paper.
 
@@ -82,3 +84,24 @@ transformProg d ts = errorPart "Transformation" $ do
                 vs = head xss
                 disj = foldl1 aor ts
     mapM f d
+
+elim :: Term -> Mfresh Term
+elim (ExistsT x ty t) = do ll <- lar (Constant "false") ty
+                           elim (replaceInTerm [(x,ll)] t)
+elim (Lambda x s t)   = liftM (Lambda x s) (elim t)
+elim (Apply a b)      = liftM2 Apply (elim a) (elim b)
+elim (Constant c)     = return $ Constant c
+elim (Variable x)     = return $ Variable x
+
+com :: MonoType -> Term -> Mfresh Term
+com (BoolT phi) z = return $ aand z (Apply (Constant "¬") phi)
+com (ArrowT x IntT ty) z = com ty (Apply z $ Variable x) >>= return . aexists x Int
+com (ArrowT "_" ty1 ty2) z = lar (Constant "false") ty1 >>= com ty2 . Apply z
+
+lar :: Term -> MonoType -> Mfresh Term
+lar g (BoolT phi) = return $ aor g phi
+lar g (ArrowT x IntT ty) = liftM (Lambda x Int) (lar g ty) 
+lar g (ArrowT "_" ty1 ty2) = do
+  z <- freshVar
+  c <- com ty1 (Variable z)
+  liftM (Lambda z Int) (lar (aor g c) ty2)

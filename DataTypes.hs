@@ -29,6 +29,7 @@ data Term = Variable Variable
           | Constant Constant
           | Apply Term Term
           | Lambda Variable Sort Term
+          | ExistsT Variable MonoType Term
           deriving (Eq)
 
 instance Show Term where
@@ -40,6 +41,7 @@ type Gamma = [(Variable,Scheme)]
 
 --functions for working with DataTypes
 ---------------
+
 
 --Gives the sort corresponding to a monotype
 flat :: MonoType -> Sort
@@ -195,3 +197,4 @@ aand t1 t2 = (Apply (Apply (Constant "∧") t1) t2)
 aor t1 t2 = (Apply (Apply (Constant "∨") t1) t2)
 aforall x s t = (Apply (Constant "∀") (Lambda x s t))
 aimplies t1 t2 = (Apply (Apply (Constant "⇒") t1) t2)
+aexists x s t = (Apply (Constant "∃") (Lambda x s t))

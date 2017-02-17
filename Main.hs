@@ -4,7 +4,7 @@ import System.Environment
 import System.IO
 import System.Console.GetOpt
 
-import Fresh(fromM)
+import Fresh(fromM,ret)
 import Parser
 import Transform
 import FormulaChecks
@@ -17,7 +17,6 @@ import Simplify
 import Tools
 import Printing
 
-runMf = fst.flip fromM 0
 
 (<$*) :: Monad m => m a -> (a -> m b) -> m a
 (<$*) xm f = do
@@ -121,14 +120,14 @@ makeOutUTF out operation = out (\ h -> hSetUTF8 h >> operation h)
 run :: String -> IO String -> ((DeltaEnv,Gamma,Term,Term) -> IO ()) -> IO ()
 run fname inp out = do --io monad
     s<-inp
-    case (do -- Either monad (Exceptions)
-        (delta,dd,goal) <- parseFile fname s
+    case fromM (do -- Either monad (Exceptions)
+        (delta,dd',goal') <- ret $ parseFile fname s
         -- checktype dd
-        prog <- transformProg delta dd
-        runMf (do --Mfresh
-          (d2,g,c1) <- inferProg delta prog
-          (d3,c2,BoolT s) <- infer g goal
-          return $ return (d2++d3,g,(aand c1 c2),s))
-        ) of
-        Right a -> out a
+        (goal:dd) <- mapM elim (goal':dd')
+        prog <- ret (transformProg delta dd)
+        (d2,g,c1) <- inferProg delta prog
+        (d3,c2,BoolT s) <- infer g goal
+        return (d2++d3,g,(aand c1 c2),s)
+        ) 0 of
+        Right (a,n) -> out a
         Left e -> hPutStrLn stderr e
