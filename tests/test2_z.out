@@ -1,4 +1,4 @@
-(:version "4.3.2")
+(:version "4.4.1")
 version should be <=4.4.1
 a result of unsat means that there is a model for the program clauses in which the goal clause does not hold
 sat
