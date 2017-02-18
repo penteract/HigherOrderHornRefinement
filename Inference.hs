@@ -36,7 +36,9 @@ getTyOfConst c
         x <- freshVar
         return ([("X",Arrow Int Bool)],
             ArrowT "_" (ArrowT "x_" IntT (BoolT $ qp "X x_") ) (BoolT $ qp ("{} {}:int.X {}"%[c,x,x])))
+    | c `elem` logicalConstants = return ([],BoolT (Constant c))
     | all isDigit c = return ([],IntT)
+    | otherwise = ret (Left ("unknown constant"++c))
 
 
 infer :: Gamma -> Term -> Mfresh (DeltaEnv,Term,MonoType)
@@ -63,11 +65,13 @@ infer g (Apply t1 t2) = do
     c3 <- inferSub ty2 ty1
     return (d1++d2, aand (aand c1 c2) c3, replaceInMT [(x,t2)] ty) --(IApp)  (paper currently uses d1 rather than d1++d2, but this works better)
 infer g (Lambda x Int t) = do
-    (d1,c,ty) <- infer ((x,([],IntT)):g) t
-    return (d1,aforall x Int c,ArrowT x IntT ty)--(IProd)
+    v <- freshVar
+    (d1,c,ty) <- infer ((v,([],IntT)):g) (replaceInTerm [(x,Variable v)] t)
+    return (d1,aforall v Int c,ArrowT v IntT ty)--(IProd)
 infer g (Lambda x s t) = do
+    v <- freshVar
     (ty1,d1) <- freshTy (flatenv g) s
-    (d2,c,ty2) <- infer ((x,([],ty1)):g) t
+    (d2,c,ty2) <- infer ((v,([],ty1)):g) (replaceInTerm [(x,Variable v)] t)
     return (d1++d2,c,ArrowT "_" ty1 ty2) --(IArrow)
 
 inferSub :: MonoType -> MonoType -> Mfresh Term

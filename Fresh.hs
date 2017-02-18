@@ -1,12 +1,11 @@
 module Fresh(freshVar,freshRel,freshTy,freshEnv,
-    fromM,Mfresh,ret)
+    fromM,Mfresh,ret,(>-))
     where
 
 --Implements the judgements freshVar, freshTy and freshRel given in section 6 (Type inference) the paper
 
 
 import DataTypes
-
 import Control.Monad (liftM, ap)
 import Control.Applicative
 --import Data.Functor
@@ -62,3 +61,12 @@ freshEnv delta = do
 ret :: Either String a -> Mfresh a
 ret (Left s) = Mfresh (\n -> Left s)
 ret (Right x) = Mfresh (\n -> Right (x,n))
+
+--half of >>=
+(>-) ::  Mfresh a -> (Either String a-> Either String b)-> Mfresh b
+(>-) (Mfresh f) g = Mfresh ((\xm -> case g (fmap fst xm) of
+    Left s -> Left s
+    Right x -> case xm of
+                    Right (y,m) -> Right (x,m)
+                    Left s -> Left (s++"\n and error in error handler")
+    ).f)

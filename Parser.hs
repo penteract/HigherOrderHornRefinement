@@ -117,7 +117,7 @@ monotype = chainr1 (
                return $ BoolT g) <|>
            (do (Variable x)<-variable
                tok ":"
-               tok "Int"
+               tok "int"
                tok "->"
                ty <- monotype
                return $ ArrowT x IntT ty)<|>

@@ -120,11 +120,11 @@ makeOutUTF out operation = out (\ h -> hSetUTF8 h >> operation h)
 run :: String -> IO String -> ((DeltaEnv,Gamma,Term,Term) -> IO ()) -> IO ()
 run fname inp out = do --io monad
     s<-inp
-    case fromM (do -- Either monad (Exceptions)
+    case fromM (do -- Mfresh monad (fresh vars + Exceptions)
         (delta,dd',goal') <- ret $ parseFile fname s
         -- checktype dd
         (goal:dd) <- mapM elim (goal':dd')
-        prog <- ret (transformProg delta dd)
+        prog <- (transformProg delta dd)
         (d2,g,c1) <- inferProg delta prog
         (d3,c2,BoolT s) <- infer g goal
         return (d2++d3,g,(aand c1 c2),s)

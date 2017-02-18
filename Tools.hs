@@ -1,6 +1,7 @@
 module Tools
     where
 
+
 -- helper function for making strings nicely
 (%) :: String -> [String] -> String
 (%) s [] = s
@@ -16,9 +17,8 @@ errorPart _ (Right x) = Right x
 check :: Bool -> String -> Either String ()
 check cond err = if cond then Right () else Left err
 
-unless = flip check
+--unless= (.) . ret flip check
 
-infixl 1 `unless`
 
 fromRight :: Either a b -> b
 fromRight (Right x) = x

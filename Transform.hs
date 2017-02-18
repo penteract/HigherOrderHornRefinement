@@ -1,12 +1,19 @@
 module Transform(transform,checkHorn,transformProg,vlist,slist,split,occursIn, elim)
     where
 
-import Fresh(Mfresh,freshVar)
+import Fresh(Mfresh,freshVar,ret,(>-))
 import DataTypes
 import Tools
 import FormulaChecks(checkSort)
 import Data.Maybe(fromJust)
 import Control.Monad(liftM,liftM2)
+
+
+infixl 1 `unless`
+
+unless :: String -> Bool -> Mfresh ()
+unless err cond = ret (if cond then Right () else Left err)
+
 
 --Based on section 4 of the paper.
 
@@ -66,23 +73,20 @@ occursIn x (Lambda y _ t) = x/=y && x `occursIn` t
 
 -- Transforms a program as given in Section 4(Reduction to program evaluation) of the paper
 -- turns foralls into lambdas and combines clauses with the same head
-transformProg :: DeltaEnv -> [Term] -> Either String [(Variable,Term)] --this is called (| |) in the paper
-transformProg d ts = errorPart "Transformation" $ do
-    txsys <- mapM split ts
+transformProg :: DeltaEnv -> [Term] -> Mfresh [(Variable,Term)] --this is called (| |) in the paper
+transformProg d ts = (>- errorPart "Transformation") $ do
+    txsys <- ret $ mapM split ts
     let f (v,s) = do
-            (ss,sb)<- slist s
-            "No clauses given for {}"%[v] `unless` ts/=[]
-            "non-matching arguments for {}"%[v] `unless` all (==vs) xss
+            (ss,sb)<- ret $ slist s
             unlines ["unexpected number of arguments to {}" % [v],
-                     "given {}" % [show (length vs)],
                      "expected {}" % [show (length ss)]
-                    ] `unless` length vs == length ss
-            mapM (checkSort (zip vs ss ++ d)) ts
-            Right (v,foldr (\ (v,s) term -> Lambda v s term) disj (zip vs ss))
-            where
-                (ts,xss) = unzip [(t,xs) | (t,(xs,y))<-txsys, y==v]
-                vs = head xss
-                disj = foldl1 aor ts
+                    ] `unless` (all ((length ss==).length.fst.snd) txsys)
+            vs <- mapM (const freshVar) ss
+            let ts = [replaceInTerm (zip xs (map Variable vs)) t | (t,(xs,y))<-txsys, y==v]
+            "No clauses given for {}"%[v] `unless` ts/=[]
+            --"non-matching arguments for {}"%[v] `unless` all (==vs) xss
+            ret $ mapM (checkSort (zip vs ss ++ d)) ts
+            return (v,foldr (\ (v,s) term -> Lambda v s term) (foldl1 aor ts) (zip vs ss))
     mapM f d
 
 elim :: Term -> Mfresh Term
