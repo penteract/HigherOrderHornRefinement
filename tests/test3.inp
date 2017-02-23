@@ -1,0 +1,11 @@
+environment
+add : int->int->int->bool
+iter:(int->int->bool)->int->int->bool;
+
+program
+z = x + y ⇒ add x y z
+n ≤ 0 ∧ r = 0 ⇒ iter f n r
+( ∃ p : int. n > 0 ∧ iter f (n − 1 ) p ∧ f p r ) ⇒ iter f n r;
+
+goal
+E n,r:int. iter (add 3) n r ^ n > r

@@ -1,0 +1,10 @@
+environment
+ack : int->int->int->bool;
+
+program
+m=0 ^ r=n+1 ⇒ ack m n r
+m>0 ^ n = 0 ^ ack (m-1) 1 r ⇒ ack m n r
+m>0^n>0 ^ (E x:int.ack m (n-1) x ^ ack (m-1) x r) ⇒ ack m n r;
+
+goal
+∃ m,n,r:int. m>=0 ^ n>=0 ^ ack m n r ^ r < n

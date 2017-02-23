@@ -1,0 +1,9 @@
+environment
+sum : int->int->bool;
+
+program
+n ≤ 0 ^ r=0⇒ sum n r
+n > 0 ^ (E x:int. sum (n-1) x ^ r = n + x) ⇒ sum n r;
+
+goal
+∃ x,y:int. sum x y ^ x > y

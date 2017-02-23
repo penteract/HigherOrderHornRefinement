@@ -1,0 +1,9 @@
+environment
+mc91 : int->int->bool;
+
+program
+x > 100 ^ r = x-10 => mc91 x r
+x<=100 ^ (E y:int.(mc91 (x+11) y) ^ mc91 y r) => mc91 x r;
+
+goal
+∃ x,y:int. x<=101 ^ ¬ y=91 ^ mc91 x y
