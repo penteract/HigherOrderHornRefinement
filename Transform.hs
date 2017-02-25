@@ -78,11 +78,12 @@ transformProg d ts = (>- errorPart "Transformation") $ do
     txsys <- ret $ mapM split ts
     let f (v,s) = do
             (ss,sb)<- ret $ slist s
+            let txsys' = [(t,(xs,y)) | (t,(xs,y))<-txsys, y==v]
             unlines ["unexpected number of arguments to {}" % [v],
                      "expected {}" % [show (length ss)]
-                    ] `unless` (all ((length ss==).length.fst.snd) txsys)
+                    ] `unless` (all ((length ss==).length.fst.snd) txsys')
             vs <- mapM (const freshVar) ss
-            let ts = [replaceInTerm (zip xs (map Variable vs)) t | (t,(xs,y))<-txsys, y==v]
+            let ts = [replaceInTerm (zip xs (map Variable vs)) t | (t,(xs,y))<-txsys']
             "No clauses given for {}"%[v] `unless` ts/=[]
             --"non-matching arguments for {}"%[v] `unless` all (==vs) xss
             ret $ mapM (checkSort (zip vs ss ++ d)) ts
