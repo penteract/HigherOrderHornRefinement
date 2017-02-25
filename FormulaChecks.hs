@@ -2,6 +2,7 @@ module FormulaChecks
     where
 
 import DataTypes
+import Control.Monad.Error
 
 -- gets the sort of a constant, may be given a hint
 getSort :: String -> Maybe Sort -> DeltaEnv -> Either String Sort
