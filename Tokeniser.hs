@@ -73,6 +73,7 @@ tokeniseFromFile ops' fname s = (tokeniseFromGetters $ tokengetters $ makeTree o
 
 tokeniseFromGetters :: Tgtrs -> Remainder -> Either String [Token]
 tokeniseFromGetters gs ("",_) = Right []
+tokeniseFromGetters gs ('#':s,f) = tokeniseFromGetters gs (dropWhile (/= '\n') s,f)
 tokeniseFromGetters gs s = case find (\(x,_) -> x $ fst s) gs of
             Nothing -> Left ("error in tokeniser: " ++ (show $ snd s))
             Just (_,f) -> let (a,rest)=(f s) in (tokeniseFromGetters gs rest >>= Right . (a++))
