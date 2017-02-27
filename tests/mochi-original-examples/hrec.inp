@@ -2,15 +2,10 @@ environment
 f : (int->int->bool)->int->int->bool
 succ : int->int->bool;
 
-
 program
-
 r=x+1 => succ x r
-
 x>=0 ^ g x r => f g x r
-
 x < 0 ^ (E y:int. g x y ^ f (f g) y r) => f g x r;
-
 
 goal
 ∃ n,r:int. (f succ n r) ^ r < 0

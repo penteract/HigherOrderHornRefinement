@@ -85,7 +85,7 @@ inferSub (ArrowT "_" ty1 ty2) (ArrowT "_" ty1_ ty2_) = do
     c1 <- inferSub ty1_ ty1
     c2 <- inferSub ty2 ty2_
     return $ aand c1 c2
-inferSub _ _ = error "type error"
+inferSub x y = ret $ Left (unlines ["type error",show x,show y])
 
 
 inferProg :: DeltaEnv -> [(Variable,Term)] -> Mfresh (DeltaEnv, Gamma, Term)
