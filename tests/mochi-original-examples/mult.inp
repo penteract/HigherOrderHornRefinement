@@ -1,0 +1,9 @@
+environment
+mult : int->int->int->bool;
+
+program
+(n<=0 \/ m<=0) ^ r=0 => mult n m r
+n>0 ^ m>0 ^ (E x,y:int.r=x+n ^ y=m-1 ^ mult n y x) => mult n m r;
+
+goal
+E n,r:int. mult n n r ^ n>r;

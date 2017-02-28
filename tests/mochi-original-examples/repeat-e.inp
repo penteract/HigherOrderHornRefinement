@@ -1,0 +1,11 @@
+environment
+succ : int->int->bool
+repeat : (int->int->bool)->int->int->int->bool;
+
+program
+r=n+1 => succ n r
+n <= 0 ^ r=s => repeat f n s r
+n>0 ^ (E i,j:int. i=n-1 ^ repeat f i s j ^ f j r ) => repeat f n s r;
+
+goal
+E n,r:int. n>0 ^ repeat succ n 0 r ^ r <= n

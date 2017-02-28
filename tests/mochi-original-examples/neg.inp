@@ -1,0 +1,16 @@
+environment
+g : int->int->bool
+#twice : (int->int->bool)->int->int->bool
+twice : (int->int->bool)->(int->bool)->int->bool
+neg : int->int->bool;
+
+program
+x=r => g x r
+(E i,j:int. x i ^ f i j ^ f j r )=> twice f x r
+#(x r )=> twice f x r # <- this version has the problem as well
+#(E j:int. f x j ^ f j r )=> twice f x r
+x+r=0 => neg x r;
+
+goal
+#E n,z,i:int. n>=0 ^ g n i ^ twice neg i  z ^ z<0;
+E n,z:int. n>=0 ^ twice neg (g n) z ^ z<0;
