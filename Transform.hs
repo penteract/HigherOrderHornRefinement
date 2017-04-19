@@ -1,18 +1,19 @@
 module Transform(transform,checkHorn,transformProg,vlist,slist,split,occursIn, elim)
     where
 
-import Fresh(Mfresh,freshVar,ret,(>-))
+import Fresh(Mfresh,freshVar)
 import DataTypes
 import Tools
 import FormulaChecks(checkSort)
 import Data.Maybe(fromJust)
 import Control.Monad(liftM,liftM2)
+import Control.Monad.Except(throwError,lift)
 
 
 infixl 1 `unless`
 
 unless :: String -> Bool -> Mfresh ()
-unless err cond = ret (if cond then Right () else Left err)
+unless err cond = if cond then return () else throwError err
 
 
 --Based on section 4 of the paper.
@@ -74,10 +75,10 @@ occursIn x (Lambda y _ t) = x/=y && x `occursIn` t
 -- Transforms a program as given in Section 4(Reduction to program evaluation) of the paper
 -- turns foralls into lambdas and combines clauses with the same head
 transformProg :: DeltaEnv -> [Term] -> Mfresh [(Variable,Term)] --this is called (| |) in the paper
-transformProg d ts = (>- errorPart "Transformation") $ do
-    txsys <- ret $ mapM split ts
+transformProg d ts = errorPart "Transformation" $ do
+    txsys <- lift $ mapM split ts
     let f (v,s) = do
-            (ss,sb)<- ret $ slist s
+            (ss,sb)<- lift $ slist s
             let txsys' = [(t,(xs,y)) | (t,(xs,y))<-txsys, y==v]
             unlines ["unexpected number of arguments to {}" % [v],
                      "expected {}" % [show (length ss)]
@@ -86,7 +87,7 @@ transformProg d ts = (>- errorPart "Transformation") $ do
             let ts = [replaceInTerm (zip xs (map Variable vs)) t | (t,(xs,y))<-txsys']
             "No clauses given for {}"%[v] `unless` ts/=[]
             --"non-matching arguments for {}"%[v] `unless` all (==vs) xss
-            ret $ mapM (checkSort (zip vs ss ++ d)) ts
+            lift $ mapM (checkSort (zip vs ss ++ d)) ts
             return (v,foldr (\ (v,s) term -> Lambda v s term) (foldl1 aor ts) (zip vs ss))
     mapM f d
 

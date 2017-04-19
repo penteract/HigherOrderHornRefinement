@@ -38,7 +38,7 @@ getTyOfConst c
             ArrowT "_" (ArrowT "x_" IntT (BoolT $ qp "X x_") ) (BoolT $ qp ("{} {}:int.X {}"%[c,x,x])))
     | c `elem` logicalConstants = return ([],BoolT (Constant c))
     | all isDigit c = return ([],IntT)
-    | otherwise = ret (Left ("unknown constant"++c))
+    | otherwise = lift (Left ("unknown constant"++c))
 
 
 infer :: Gamma -> Term -> Mfresh (DeltaEnv,Term,MonoType)
@@ -85,7 +85,7 @@ inferSub (ArrowT "_" ty1 ty2) (ArrowT "_" ty1_ ty2_) = do
     c1 <- inferSub ty1_ ty1
     c2 <- inferSub ty2 ty2_
     return $ aand c1 c2
-inferSub x y = ret $ Left (unlines ["type error",show x,show y])
+inferSub x y = lift $ Left (unlines ["type error",show x,show y])
 
 
 inferProg :: DeltaEnv -> [(Variable,Term)] -> Mfresh (DeltaEnv, Gamma, Term)

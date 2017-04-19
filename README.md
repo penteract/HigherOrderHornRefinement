@@ -2,7 +2,7 @@ Higher Order Horn Refinement
 ============================
 
 ##Build
-This uses the package *parsec*, which can be installed using Cabal.
+This uses the packages *parsec* and *mtl*, which can be installed using Cabal.
 
 To build, simply run `ghc Main`.
 
@@ -57,4 +57,4 @@ These work with z3 versions <=4.4.1 and >=4.4.2 respectively.
 
 The -x option outputs in unextended SMT-LIB format which works with all tested versions of Z3.
 It has not been tested with any SMT-LIB solvers other than Z3.
-Z3 version 4.4.2 produces more complicated output with this than with -z.
+Z3 version 4.4.2 produces simpler output with -z than with -x.

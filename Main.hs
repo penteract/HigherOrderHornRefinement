@@ -4,7 +4,7 @@ import System.Environment
 import System.IO
 import System.Console.GetOpt
 
-import Fresh(fromM,ret)
+import Fresh(runStateT,lift)
 import Parser
 import Transform
 import FormulaChecks
@@ -120,8 +120,8 @@ makeOutUTF out operation = out (\ h -> hSetUTF8 h >> operation h)
 run :: String -> IO String -> ((DeltaEnv,Gamma,Term,Term) -> IO ()) -> IO ()
 run fname inp out = do --io monad
     s<-inp
-    case fromM (do -- Mfresh monad (fresh vars + Exceptions)
-        (delta,dd',goal') <- ret $ parseFile fname s
+    case runStateT (do -- Mfresh monad (fresh vars + Exceptions)
+        (delta,dd',goal') <- lift $ parseFile fname s
         -- checktype dd
         (goal:dd) <- mapM elim (goal':dd')
         prog <- (transformProg delta dd)
