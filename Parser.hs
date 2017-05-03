@@ -225,6 +225,9 @@ fromParse (Right x) =  Right x
 qp :: String -> Term
 qp = fromRight . runParser formula () "" . fromRight.tknsr2
 
+qs :: String -> Sort
+qs = fromRight . runParser sort () "" . fromRight.tknsr2
+
 {-
 strip [] = []
 strip (("\n",NewLine,_):rest) = strip rest

@@ -11,71 +11,71 @@ import Data.Char(isDigit)
 
 import Control.Monad --(liftM, ap)
 import Control.Applicative
+import Control.Monad.Except(throwError)
 
 import Tools
 
--- See section 6 (Type inference) of the Paper. This is an implementation of the inference relations defined there.
+-- See appendix D (Type inference) of the paper. This is an implementation of the 'algorithm from inference rules' defined there.
 
+
+isFm ::[Variable] -> Term -> Bool -- does not check the sort
+isFm vars (Constant c) = isIlaSymbol c
+isFm vars (Variable x) = x `elem` vars
+isFm vars (Apply t1 t2) = isFm vars t1 && isFm vars t2
+isFm vars _ = False
 
 --flattens a type enviroment into a sort environment
 flatenv :: Gamma -> DeltaEnv
-flatenv = map (\(x,(_,ty))->(x, flat ty))
-
-getTyOfConst :: Constant -> Mfresh Scheme
-getTyOfConst c
-    | c `elem` ilaOps = return ([],(ArrowT "_" IntT (ArrowT "_" IntT IntT)))
-    | c `elem` ilaRels = return ([],ArrowT "x_" IntT . ArrowT "y_" IntT $ BoolT (qp ("x_ {} y_"%[c])))
-    | c `elem` logicalBinary =
-        return ([("X",Bool),("Y",Bool)],
-         ArrowT "_" (BoolT (qp "X")).ArrowT "_" (BoolT (qp "Y")) $ BoolT (qp ("X {} Y"%[c])))
-    | c `elem` logicalUnary =
-        return ([("X",Bool)],
-         ArrowT "_" (BoolT (qp "X")) $ BoolT (qp ("{} X"%[c])))
-    | c `elem` logicalQuantifiers = -- what if it's not quantifying over ints?
-        do
-        x <- freshVar
-        return ([("X",Arrow Int Bool)],
-            ArrowT "_" (ArrowT "x_" IntT (BoolT $ qp "X x_") ) (BoolT $ qp ("{} {}:int.X {}"%[c,x,x])))
-    | c `elem` logicalConstants = return ([],BoolT (Constant c))
-    | all isDigit c = return ([],IntT)
-    | otherwise = lift (Left ("unknown constant"++c))
-
+flatenv = map (\(x,ty)->(x, flat ty))
 
 infer :: Gamma -> Term -> Mfresh (DeltaEnv,Term,MonoType)
 infer g (Variable v) = do
-    (ts,ds) <- sequence (map (freshRel (flatenv g)) ss) >>= return.unzip
-    return (ds,Constant "true",replaceInMT (zip vs ts) ty)--(IVar)
+    ty <- case lookup v g of
+               Just x -> return x
+               Nothing -> throwError (v++" not found") 
+    return ([], Constant "true", ty) --(IVar)
     where 
-        (targs,ty) = case lookup v g of
+        ty = case lookup v g of
                           Just x -> x
-                          Nothing -> error (v++" not found")
-        (vs,ss) = unzip targs
-infer g (Constant c) = do
-    (targs,ty) <- getTyOfConst c
-    let (vs,ss) = unzip targs
-    (ts,ds) <- unzip <$> mapM (freshRel (flatenv g)) ss
-    return (ds,Constant "true",replaceInMT (zip vs ts) ty)--(IConst)
+                          Nothing -> error (v++" not found") 
+infer g (Apply (Apply (Constant "∧") t1) t2) = do
+    (d1,c1,BoolT phi) <- infer g t1
+    (d2,c2,BoolT psi) <- infer g t2
+    return (d1++d2,aand c1 c2,BoolT (aand phi psi))--(IAnd)
+infer g (Apply (Apply (Constant "∨") t1) t2) = do
+    (d1,c1,BoolT phi) <- infer g t1
+    (d2,c2,BoolT psi) <- infer g t2
+    return (d1++d2,aand c1 c2,BoolT (aor phi psi))--(IOr)
+infer g (Apply (Constant "∃") (Lambda x Int t)) = do
+    v <- freshVar
+    (d,c,BoolT phi) <-infer ((v,IntT):g) (replaceInTerm [(x,Variable v)] t)--(IExists)
+    return (d,c,BoolT (aexists v Int phi))
+infer g t
+    | isFm [x | (x,t)<-g , t==IntT] t = return ([], Constant "true", BoolT t)--(IConstraint)
 infer g (Apply t1 t2) = do
-    aaa <- infer g t1
-    (d1,c1,x,ty1,ty) <- return (case aaa of
-              (d1,c1,(ArrowT x ty1 ty))->(d1,c1,x,ty1,ty)
-              _ -> error (show aaa ++show t1 ++ show t2++";"++show g)
-              )
-    (d2,c2,ty2) <- infer g t2
-    c3 <- inferSub ty2 ty1
-    return (d1++d2, aand (aand c1 c2) c3, replaceInMT [(x,t2)] ty) --(IApp)  (paper currently uses d1 rather than d1++d2, but this works better)
+    dcty <- infer g t1
+    case dcty of
+         (d1,c1,(ArrowT x IntT ty))-> return
+             (d1,c1,replaceInMT [(x,t2)] ty)--(IAppI)
+         (d1,c1,(ArrowT _ ty1 ty))-> do
+             (d2,c2,ty2) <- infer g t2
+             c3 <- inferSub ty2 ty1
+             return (d1++d2, aand (aand c1 c2) c3, ty)--(IAppR)
+         _ -> throwError (show dcty ++show t1 ++ show t2++";"++show g)
+         
 infer g (Lambda x Int t) = do
     v <- freshVar
-    (d1,c,ty) <- infer ((v,([],IntT)):g) (replaceInTerm [(x,Variable v)] t)
-    return (d1,aforall v Int c,ArrowT v IntT ty)--(IProd)
+    (d1,c,ty) <- infer ((v,IntT):g) (replaceInTerm [(x,Variable v)] t)
+    return (d1,aforall v Int c,ArrowT v IntT ty)--(IAbsI)
 infer g (Lambda x s t) = do
     v <- freshVar
     (ty1,d1) <- freshTy (flatenv g) s
-    (d2,c,ty2) <- infer ((v,([],ty1)):g) (replaceInTerm [(x,Variable v)] t)
-    return (d1++d2,c,ArrowT "_" ty1 ty2) --(IArrow)
+    (d2,c,ty2) <- infer ((v,ty1):g) (replaceInTerm [(x,Variable v)] t)
+    return (d1++d2,c,ArrowT "_" ty1 ty2) --(IAbsR)
+infer g t = throwError (show t)
 
 inferSub :: MonoType -> MonoType -> Mfresh Term
-inferSub IntT IntT = return $ Constant "true"
+--inferSub IntT IntT = return $ Constant "true"
 inferSub (BoolT t1) (BoolT t2) = return $ aimplies t1 t2
 inferSub (ArrowT x IntT ty) (ArrowT y IntT ty_) = do
     z <- freshVar
@@ -85,13 +85,13 @@ inferSub (ArrowT "_" ty1 ty2) (ArrowT "_" ty1_ ty2_) = do
     c1 <- inferSub ty1_ ty1
     c2 <- inferSub ty2 ty2_
     return $ aand c1 c2
-inferSub x y = lift $ Left (unlines ["type error",show x,show y])
+inferSub x y = throwError (unlines ["type error",show x,show y])
 
 
 inferProg :: DeltaEnv -> [(Variable,Term)] -> Mfresh (DeltaEnv, Gamma, Term)
 inferProg d prog= do
     (g,d') <- freshEnv d
     (ds,cs,tys) <- unzip3 <$> mapM (infer g) ts
-    c2s <- sequence (zipWith inferSub tys (map(snd.fromJust.flip lookup g) vs))
+    c2s <- sequence (zipWith inferSub tys (map (fromJust.flip lookup g) vs))
     return (d'++concat ds,g,foldl1 aand (zipWith aand cs c2s))
     where (vs,ts) = unzip prog

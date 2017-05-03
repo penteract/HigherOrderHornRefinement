@@ -11,6 +11,7 @@ import Simplify
 import Data.Maybe(fromJust)
 import Data.Functor
 
+
 test1 = "∀r:int.∀n:int.∀m:int.∀Iter:(int->int->bool)->int->int->int->bool.∀f:int->int->bool. ∃x:int. ¬(n <= 0) ∧ Iter f x (n - 1) r ∧ f m x ⇒ Iter f m n r"
 
 
@@ -28,7 +29,7 @@ test5 = "A x,y:int,somefunction:int->int.E a,b:int.x=somefuntion a^y=somefunctio
 test6 = qp "n<=0^r=0"
 gamma6 = [("n",([],IntT)),("r",([],IntT))]
 
-testMf = fst.flip fromM 0
+testMf = fst.flip runStateT 0
 snd3 = (\(a,b,c)->b)
 trd = (\(a,b,c)->c)
 test = testMf$infer gamma6 test6
@@ -91,7 +92,7 @@ test9 = unlines [
     "E n,r:int. iter add n r ^ n > r"]
     
 main :: IO ()
-main = putStrLn.ununicode $ unlines $ map fromEither  results
+main = putStrLn.ununicode $ unlines $ map (either id id) results
     where 
         results = (map ((>>return"pass.").runp) [test1,test2,test3,test4,test5,test8] ++
             [runp test1>>=getsort.head>>return "pass."] ++

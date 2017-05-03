@@ -1,7 +1,18 @@
-(:version "4.4.1")
-version should be <=4.4.1
 a result of unsat means that there is a model for the program clauses in which the goal clause does not hold
 unsat
+(define-fun goal_ () Bool
+  (let ((a!1 (exists ((x!1 Int) (x!2 Int))
+             (and (>= x!2 0) (<= (+ x!1 (* (- 1) x!2)) 0) (not (<= x!1 x!2)))))
+      (a!2 (exists ((x!1 Int) (x!2 Int))
+             (let ((a!1 (and (>= x!2 0) (<= (+ x!1 (* (- 1) x!2)) 0)))
+                   (a!2 (exists ((x!3 Int) (x!4 Int))
+                          (and (= x!2 (+ x!1 x!4))
+                               (>= x!4 0)
+                               (<= (+ x!3 (* (- 1) x!4)) 0)
+                               (not (<= x!1 0))
+                               (= x!3 (+ (- 1) x!1))))))
+               (and (or a!1 a!2) (not (<= x!1 x!2)))))))
+  (or a!1 a!2)))
 (define-fun x_16 ((x!1 Int) (x!2 Int)) Bool
   (let ((a!1 (and (>= x!1 0) (<= (+ x!2 (* (- 1) x!1)) 0)))
         (a!2 (exists ((x!3 Int) (x!4 Int))
@@ -10,19 +21,6 @@ unsat
                     (<= (+ x!3 (* (- 1) x!4)) 0)
                     (not (<= x!2 0))
                     (= x!3 (+ (- 1) x!2))))))
-    (or a!1 a!2)))
-(define-fun x_51 ((x!1 Int)) Bool
-  (let ((a!1 (exists ((x!2 Int))
-               (and (>= x!2 0) (<= (+ x!1 (* (- 1) x!2)) 0) (not (<= x!1 x!2)))))
-        (a!2 (exists ((x!2 Int))
-               (let ((a!1 (and (>= x!2 0) (<= (+ x!1 (* (- 1) x!2)) 0)))
-                     (a!2 (exists ((x!3 Int) (x!4 Int))
-                            (and (= x!2 (+ x!1 x!4))
-                                 (>= x!4 0)
-                                 (<= (+ x!3 (* (- 1) x!4)) 0)
-                                 (not (<= x!1 0))
-                                 (= x!3 (+ (- 1) x!1))))))
-                 (and (or a!1 a!2) (not (<= x!1 x!2)))))))
     (or a!1 a!2)))
 (define-fun x_9 ((x!1 Int) (x!2 Int) (x!3 Int)) Bool
   (= x!1 (+ x!3 x!2)))

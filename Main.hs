@@ -62,7 +62,7 @@ options =
         "don't try to read unicode input"
     , Option ['r'] []
         (NoArg (\opts -> opts{optTermOut = (\(d,g,t,gt)->
-            let t2 = proc t (foldl1 union (freeVars gt:map (freeVarsOfTy.snd.snd) g)) in
+            let t2 = proc t (foldl1 union (freeVars gt:map (freeVarsOfTy.snd) g)) in
                 (filter ((`occursIn` t2) . fst) d,g,t2,gt)) . optTermOut opts}))
         "apply the unfold reduction to output"
     , Option ['t'] []
@@ -71,12 +71,9 @@ options =
     , Option ['x'] []
         (NoArg (\opts -> opts{optTermPrint = smtPrint2}))
         "Output SMT-LIB format"
-    , Option ['y'] []
-        (NoArg (\opts -> opts{optTermPrint = smtPrint False}))
-        "Output in extended SMT-LIB format for Z3 (4.4.1 or earlier)"
     , Option ['z'] []
-        (NoArg (\opts -> opts{optTermPrint = smtPrint True}))
-        "Output in extended SMT-LIB format for Z3 (4.4.2 or later)"
+        (NoArg (\opts -> opts{optTermPrint = smtPrint}))
+        "Output in extended SMT-LIB format for Z3"
     ]
 
 applyOpts :: Opt -> String -> IO Handle -> ((Handle -> IO ()) -> IO ()) -> IO ()

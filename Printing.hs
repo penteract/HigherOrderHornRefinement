@@ -9,21 +9,15 @@ import Transform
 
 base :: Term -> Variable
 base (Apply a b) = base a
-
 base (Variable x) = x
+base other = error ("Printing.hs, base: \n" ++ show other)
 
-smtPrint :: Bool -> (DeltaEnv,Gamma,Term,Term) -> String
-smtPrint isNew (d,g,t,gt) = legiblise (unlines [
-    ";For use with Z3, version " ++ if isNew then "4.4.2 or later" else "4.4.1 or earlier",
-    "(get-info :version)",
-    "(echo \"version should be "++(if isNew then ">=4.4.2" else "<=4.4.1")++"\")",
+smtPrint :: (DeltaEnv,Gamma,Term,Term) -> String
+smtPrint (d,g,t,gt) = legiblise (unlines [
     "(echo \"a result of unsat means that there is a model for the program clauses in which the goal clause does not hold\")",
-    unlines $ map smtDecFun d,
-    smtTerm' t,
-    --smtTerm' (pullOutAllQuantifiers True t),
-    let (t,qs)=(pullOutAllQuantifiers False gt) in
-        (if isNew then "" else unlines $ map (\(x,Int) -> "(declare-var {} Int)" % [x]) qs) ++
-        ("(query {} :print-certificate true)" % [if isNew then base t else '(':prnt t++")"])
+    unlines $ map smtDecFun (d++[("goal_",Bool)]),
+    smtTerm' (t `aand` aimplies gt (Variable "goal_")),
+    "(query {} :print-certificate true)" % ["goal_"]
     ]) smtl smtl
 smtl = [ ("and","∧"), ("=>","⇒"), ("or","∨"), ("not","¬")]
 
@@ -92,8 +86,6 @@ printInd' n [] x = replicate n ' ' ++ prnt x
 printOut = printLong.simp.stripQuantifiers
 printInd = printInd' 0 []
 pprint = putStrLn.printLong.simp.stripQuantifiers
-
-
 
 
 

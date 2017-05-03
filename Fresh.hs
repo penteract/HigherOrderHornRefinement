@@ -44,4 +44,4 @@ freshTy d (Arrow s1 s2) = do
 freshEnv :: DeltaEnv -> Mfresh (Gamma,DeltaEnv)
 freshEnv delta = do
     (tys,ds) <- unzip <$> (sequence $ map (freshTy [] . snd) delta)
-    return (zip (map fst delta) (map ((,)[]) tys), concat ds)
+    return (zip (map fst delta) tys, concat ds)

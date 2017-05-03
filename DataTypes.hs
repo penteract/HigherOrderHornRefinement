@@ -17,7 +17,7 @@ data MonoType = ArrowT Variable MonoType MonoType
           | IntT | BoolT Term 
     deriving (Eq)
 
-type Scheme = ([(Variable,Sort)],MonoType)
+--type Scheme = ([(Variable,Sort)],MonoType)
 
 instance Show MonoType where
     show t = prnty t
@@ -36,7 +36,7 @@ instance Show Term where
     show = prnt
 
 type DeltaEnv = [(Variable,Sort)]
-type Gamma = [(Variable,Scheme)]
+type Gamma = [(Variable,MonoType)]
 
 
 --functions for working with DataTypes
@@ -102,6 +102,9 @@ ilaOps = ["+","-"]
 ilaRels = [">=","<=",">","<", "="]
 binaryOps = ilaOps++ilaRels++logicalBinary
 
+isIlaSymbol :: String -> Bool
+isIlaSymbol s = s `elem` (ilaOps++ilaRels++ilaConstants++logicalConstants)
+
 
 baseEnv = zip logicalBinary (repeat (Arrow Bool . Arrow Bool $ Bool)) ++
           zip logicalUnary (repeat (Arrow Bool Bool)) ++
@@ -166,10 +169,11 @@ prnt' lp rp (Apply a b)  = if maxPrec<=lp
                               then parise (prnt' 0 maxPrec a ++ " " ++prnt' maxPrec 0 b)
                               else  prnt' lp maxPrec a ++ " " ++prnt' maxPrec rp b
 
-                              
+      {-                        
 prnsch :: Scheme -> String
 prnsch ([],t) = prnty t
 prnsch (ss,t) = "A "++intercalate " " (map (\(x,y)->x++":"++prns y) ss) ++ "." ++ prnty t
+    -}
 
 prnty :: MonoType -> String
 prnty = prnty' False
