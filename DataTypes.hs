@@ -97,13 +97,12 @@ logicalBinary = ["⇒","∨","∧","⇔"]
 logicalQuantifiers = ["∀","∃","λ"]
 logicalSymbols = logicalUnary ++ logicalBinary ++ logicalQuantifiers ++ logicalConstants
 
-ilaConstants = ["0","1"]
 ilaOps = ["+","-"]
 ilaRels = [">=","<=",">","<", "="]
 binaryOps = ilaOps++ilaRels++logicalBinary
 
 isIlaSymbol :: String -> Bool
-isIlaSymbol s = s `elem` (ilaOps++ilaRels++ilaConstants++logicalConstants)
+isIlaSymbol s = s `elem` (ilaOps++ilaRels++logicalConstants) || all (`elem` ['0'..'9']) s
 
 
 baseEnv = zip logicalBinary (repeat (Arrow Bool . Arrow Bool $ Bool)) ++
@@ -113,7 +112,6 @@ baseEnv = zip logicalBinary (repeat (Arrow Bool . Arrow Bool $ Bool)) ++
 ilaEnv :: DeltaEnv
 ilaEnv = zip ilaOps (repeat (Arrow Int . Arrow Int $ Int)) ++
          zip ilaRels (repeat (Arrow Int . Arrow Int $ Bool)) ++
-         zip ilaConstants (repeat Int) ++
          baseEnv
 
 

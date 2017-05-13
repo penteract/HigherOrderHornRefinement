@@ -10,7 +10,9 @@ getSort "∀" (Just (Arrow sigma Bool)) env = Right $ Arrow (Arrow sigma Bool) B
 getSort "∀" _ env =  Left "body of quantifier should be boolean"
 getSort "∃" (Just (Arrow sigma Bool)) env = Right $ Arrow (Arrow sigma Bool) Bool
 getSort "∃" _ env =  Left "body of quantifier should be boolean"
-getSort s hint env = case lookup s env of
+getSort s _ env 
+    | all (`elem` ['0'..'9']) s = Right Int
+    | otherwise = case lookup s env of
                           Just t -> Right t
                           Nothing -> Left ("unknown constant: "++s)--could assume here that s is a constraint
 

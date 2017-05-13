@@ -71,10 +71,6 @@ testStr p = testTok (\(s,_,_)->p s)
 tok :: String -> MyParser String
 tok s = testStr (==s)
 
-numToTerm 0 = Constant "0"
-numToTerm 1 = Constant "1"
-numToTerm n = if n<0 then Apply (Apply (Constant "-") (Constant "0")) (numToTerm (-n))
-                     else Apply (Apply (Constant "+") (Constant "1")) (numToTerm (n-1))
 
 oneOf :: [String] -> MyParser String
 oneOf [] = fail "not in set" 
@@ -96,7 +92,7 @@ parens p = do tok "("
               return t
 
 number :: MyParser Term
-number = testTok (\ (_,t,_) ->t==Number) >>= return.numToTerm.read
+number = testTok (\ (_,t,_) ->t==Number) >>= return.Constant
 
 variable :: MyParser Term
 variable = testTok (\ (_,t,_) ->t==Identifier) >>= return.Variable
