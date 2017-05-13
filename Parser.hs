@@ -40,7 +40,6 @@ cannonicals = ll ++[ ("≤","<="),("−","-"),("→","->")]
 
 --setup 
 
-isWord w = w=="" || (isAlpha (head w) && (all (\c->isAlphaNum c||c=='_') w))
 
 typeSymbols = ["->"]
 
@@ -53,9 +52,6 @@ cannonise :: Token -> Token
 cannonise (x,Operator,pos) = (fromMaybe x (lookup x cannonicals),Operator,pos)
 cannonise (x,Identifier,pos) = fromMaybe (x,Identifier,pos) (lookup x cannonicals >>= \o->Just (o,Operator,pos))
 cannonise x = x
-
-tknsr = tokeniseFromOps symbols
-tknsr2 s = tokeniseFromOps (filter (not.isWord) (symbols ++ map fst cannonicals)) s >>= return.map cannonise
 
 type MyParser a = GenParser Token () a
     
@@ -97,6 +93,9 @@ number = testTok (\ (_,t,_) ->t==Number) >>= return.Constant
 variable :: MyParser Term
 variable = testTok (\ (_,t,_) ->t==Identifier) >>= return.Variable
 
+logicalConstant ::MyParser Term
+logicalConstant = testTok (\ (s,t,_) -> (t==Operator) && (s`elem`logicalConstants) ) >>= return.Constant
+
 sort :: MyParser Sort
 sort = chainr1 ((tok "int" >> return Int) <|> (tok "bool" >> return Bool) <|> parens sort)
                 (tok "->" >> return Arrow)
@@ -124,6 +123,7 @@ monotype = chainr1 (
 
 simpleTerm :: MyParser Term
 simpleTerm = parens formula
+         <|> logicalConstant
          <|> number
          <|> variable
 
@@ -216,48 +216,3 @@ parseFile fname contents = do
         
 fromParse (Left x) = Left $ show x
 fromParse (Right x) =  Right x
-
-
-qp :: String -> Term
-qp = fromRight . runParser formula () "" . fromRight.tknsr2
-
-qs :: String -> Sort
-qs = fromRight . runParser sort () "" . fromRight.tknsr2
-
-{-
-strip [] = []
-strip (("\n",NewLine,_):rest) = strip rest
-strip (c:rest) = c:strip' rest
-strip' (("\n",NewLine,p):rest) = ("\n",NewLine,p) : strip rest
-strip' x = strip x
--}
-
-
-
---functions to help display the result of the parser (for debugging)
-{-
-fromParse (Left x) = Left $ show x
-fromParse (Right x) =  Right x
-
-
-fromLeft :: Either a b -> a
-fromLeft (Left x) = x
-
-fromEither :: Either a a -> a
-fromEither (Left x) = x
-fromEither (Right x) = x
-
-qshow s = putStrLn $ fromEither (tknsr2 s >>= (\ x-> fromParse (
-            runParser parser () "" x >>= return.concat.map (++"\n").map prnt)))
-qshowl s = putStrLn $ ununicode $ fromEither (tknsr2 s >>= (\ x-> fromParse (
-            runParser parser () "" x >>= return.concat.map (++"\n").map prnt)))
-qshowl2 s = putStrLn $ ununicode $ fromEither (tknsr2 s >>= (\ x-> fromParse (
-            runParser parser () "" x >>= return.concat.map (++"\n").map printt)))
-
-            
-runp s=  tknsr2 s >>= fromParse. runParser parser () "" 
-
-
-qt s = fromRight $ (runParser parser () "" (fromRight $ tknsr2 s))
-qs s = fromRight $ (runParser sort () "" (fromRight $ tknsr2 s))
--}
