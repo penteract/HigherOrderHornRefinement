@@ -18,7 +18,7 @@ stripQuantifiers x = x
 simplify :: Term -> Term
 simplify (Apply (Apply (Constant "∧") (Constant "true")) t) = simplify t
 simplify (Apply (Apply (Constant "∧") t) (Constant "true")) = simplify t
-simplify (Apply (Apply (Constant "⇒") (Constant "true")) t) = simplify t
+--simplify (Apply (Apply (Constant "⇒") (Constant "true")) t) = simplify t technically valid, but breaks assumptions that we are working with Horn clauses
 simplify (Apply (Constant "∀") (Lambda x s (Constant "true"))) = (Constant "true")
 simplify (Apply t1 t2) = Apply (simplify t1) (simplify t2)
 simplify (Lambda x s t) = Lambda x s (simplify t)

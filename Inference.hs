@@ -49,7 +49,7 @@ infer g (Apply (Apply (Constant "∨") t1) t2) = do
 infer g (Apply (Constant "∃") (Lambda x Int t)) = do
     v <- freshVar
     (d,c,BoolT phi) <-infer ((v,IntT):g) (replaceInTerm [(x,Variable v)] t)--(IExists)
-    return (d,c,BoolT (aexists v Int phi))
+    return (d,aforall v Int c,BoolT (aexists v Int phi))
 infer g t
     | isFm [x | (x,t)<-g , t==IntT] t = return ([], Constant "true", BoolT t)--(IConstraint)
 infer g (Apply t1 t2) = do
@@ -72,7 +72,7 @@ infer g (Lambda x s t) = do
     (ty1,d1) <- freshTy (flatenv g) s
     (d2,c,ty2) <- infer ((v,ty1):g) (replaceInTerm [(x,Variable v)] t)
     return (d1++d2,c,ArrowT "_" ty1 ty2) --(IAbsR)
-infer g t = throwError (show t)
+infer g t = throwError ("bad part of clause " ++ show t)
 
 inferSub :: MonoType -> MonoType -> Mfresh Term
 --inferSub IntT IntT = return $ Constant "true"
@@ -89,9 +89,9 @@ inferSub x y = throwError (unlines ["type error",show x,show y])
 
 
 inferProg :: DeltaEnv -> [(Variable,Term)] -> Mfresh (DeltaEnv, Gamma, Term)
-inferProg d prog= do
+inferProg d prog= errorPart "Inference" (do
     (g,d') <- freshEnv d
     (ds,cs,tys) <- unzip3 <$> mapM (infer g) ts
     c2s <- sequence (zipWith inferSub tys (map (fromJust.flip lookup g) vs))
-    return (d'++concat ds,g,foldl1 aand (zipWith aand cs c2s))
+    return (d'++concat ds,g,foldl1 aand (zipWith aand cs c2s)))
     where (vs,ts) = unzip prog
