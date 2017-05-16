@@ -5,8 +5,9 @@ module Tokeniser(
     ) where
 
 import Data.Char
-import Text.ParserCombinators.Parsec(SourcePos)
-import Text.ParserCombinators.Parsec.Pos
+--import Text.ParserCombinators.Parsec(SourcePos)
+import Text.Parsec.Pos
+import Text.Parsec.Error
 import Data.List (partition,find,elemIndices)
 import Control.Applicative ((<|>))
 import Data.Maybe (fromJust,isJust)
@@ -63,19 +64,19 @@ tokengetters t = [
             ]
 
 
-tokeniseFromOps :: [String] -> String -> Either String [Token]
+tokeniseFromOps :: [String] -> String -> Either ParseError [Token]
 tokeniseFromOps ops' s = (tokeniseFromGetters $ tokengetters $ makeTree ops')  (s,initialPos "source")
 
 
-tokeniseFromFile :: [String] -> String -> String -> Either String [Token]
+tokeniseFromFile :: [String] -> String -> String -> Either ParseError [Token]
 tokeniseFromFile ops' fname s = (tokeniseFromGetters $ tokengetters $ makeTree ops')  (s,initialPos fname)
 
 
-tokeniseFromGetters :: Tgtrs -> Remainder -> Either String [Token]
+tokeniseFromGetters :: Tgtrs -> Remainder -> Either ParseError [Token]
 tokeniseFromGetters gs ("",_) = Right []
 tokeniseFromGetters gs ('#':s,f) = tokeniseFromGetters gs (dropWhile (/= '\n') s,f)
 tokeniseFromGetters gs s = case find (\(x,_) -> x $ fst s) gs of
-            Nothing -> Left ("error in tokeniser: " ++ (show $ snd s))
+            Nothing -> Left (newErrorMessage (Message "error in tokeniser ") (snd s))
             Just (_,f) -> let (a,rest)=(f s) in (tokeniseFromGetters gs rest >>= Right . (a++))
             
         

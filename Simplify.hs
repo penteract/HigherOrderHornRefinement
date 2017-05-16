@@ -1,14 +1,34 @@
-module Simplify(stripQuantifiers,simp,proc)
+module Simplify(pullOutAllQuantifiers,stripQuantifiers,simp,proc)
     where
 
 import DataTypes
 import Transform(vlist,occursIn)
-
---import Data.Maybe(fromJust,fromMaybe)
 import Data.List
 import Tools
 
+
 --Strip outermost universal quantifiers from a conjugation of terms
+--the difference between this and (uncurry unpreproc.preproc) is that this deals with existential quantifiers
+--Not correct in general, but works in a system of Horn clauses when variables with a particular name are not bound more than once within the same clause
+pullOutAllQuantifiers :: Bool -> Term -> (Term,[(String,Sort)])
+pullOutAllQuantifiers b (Apply (Apply (Constant c) t1) t2)
+    | c `elem` ["⇒","∨","∧"] = (Apply (Apply (Constant c) t1') t2', vs1 `union` vs2)
+        where (t1',vs1) = pullOutAllQuantifiers (b `xor` (c=="⇒")) t1
+              (t2',vs2) = pullOutAllQuantifiers b t2
+pullOutAllQuantifiers b (Apply (Constant "¬") t) = ((Apply (Constant "¬") t'),vs)
+    where (t',vs) = pullOutAllQuantifiers (not b) t
+pullOutAllQuantifiers True (Apply (Constant "∀") t) = case t of
+        (Lambda x ty body) -> fmap (((x,ty):) . delete (x,ty)) $ pullOutAllQuantifiers True body
+        _ -> error "bad quantifier"
+pullOutAllQuantifiers False (Apply (Constant "∀") t) = case t of
+        _ -> error "bad quantifier"
+pullOutAllQuantifiers False (Apply (Constant "∃") t) = case t of
+        (Lambda x ty body) -> fmap (((x,ty):) . delete (x,ty)) $ pullOutAllQuantifiers False body
+        _ -> error "bad quantifier"
+pullOutAllQuantifiers True (Apply (Constant "∃") t) = case t of
+        _ -> error "bad quantifier"
+pullOutAllQuantifiers b t = (t,[])
+
 stripQuantifiers :: Term -> Term
 stripQuantifiers (Apply (Apply (Constant "∧") t1) t2) =
     (Apply (Apply (Constant "∧") (stripQuantifiers t1)) (stripQuantifiers t2))

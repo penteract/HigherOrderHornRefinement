@@ -1,8 +1,9 @@
 module Parser where
 
-import Text.ParserCombinators.Parsec.Combinator
-import Text.ParserCombinators.Parsec.Prim
-import Text.Parsec.Prim(parserReturn)
+--import Text.ParserCombinators.Parsec.Combinator
+--import Text.ParserCombinators.Parsec.Prim
+import Text.Parsec.Prim--(parserReturn)
+import Text.Parsec.Combinator
 --import Text.Parsec
 --import Text.Parsec.Prim
 import Data.Char
@@ -53,7 +54,7 @@ cannonise (x,Operator,pos) = (fromMaybe x (lookup x cannonicals),Operator,pos)
 cannonise (x,Identifier,pos) = fromMaybe (x,Identifier,pos) (lookup x cannonicals >>= \o->Just (o,Operator,pos))
 cannonise x = x
 
-type MyParser a = GenParser Token () a
+type MyParser a = Parsec [Token] () a
     
 --get a single token if it matches a predicate
 testTok :: (Token-> Bool) -> MyParser String
@@ -203,10 +204,10 @@ file = do
 
 
 parseFile :: String -> String -> Either String (DeltaEnv,[Term],Term)
-parseFile fname contents = do
+parseFile fname contents = fromParse (do
     ts <- tokeniseFromFile (symbols ++ map fst cannonicals) fname contents
     let body = strip (map cannonise ts)
-    fromParse $ runParser file () fname body
+    runParser file () fname body)
     where
         strip [] = []
         strip (("\n",NewLine,_):rest) = strip rest
@@ -216,3 +217,6 @@ parseFile fname contents = do
         
 fromParse (Left x) = Left $ show x
 fromParse (Right x) =  Right x
+
+--for testing
+qp =  (>>= (runParser formula () "" . map cannonise)) . tokeniseFromOps  (symbols ++ map fst cannonicals)

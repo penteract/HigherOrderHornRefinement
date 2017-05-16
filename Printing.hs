@@ -36,26 +36,6 @@ deand :: Term -> [Term]
 deand (Apply (Apply (Constant "∧") t1) t2) = deand t1 ++ deand t2
 deand t = [t]
 
-pullOutAllQuantifiers :: Bool -> Term -> (Term,[(String,Sort)])
-pullOutAllQuantifiers b (Apply (Apply (Constant c) t1) t2)
-    | c `elem` ["⇒","∨","∧"] = (Apply (Apply (Constant c) t1') t2', vs1 `union` vs2)
-        where (t1',vs1) = pullOutAllQuantifiers (b `xor` (c=="⇒")) t1
-              (t2',vs2) = pullOutAllQuantifiers b t2
-pullOutAllQuantifiers b (Apply (Constant "¬") t) = ((Apply (Constant "¬") t'),vs)
-    where (t',vs) = pullOutAllQuantifiers (not b) t
-pullOutAllQuantifiers True (Apply (Constant "∀") t) = case t of
-        (Lambda x ty body) -> fmap ((x,ty):) $ pullOutAllQuantifiers True body
-        _ -> error "bad quantifier"
-pullOutAllQuantifiers False (Apply (Constant "∀") t) = case t of
-        _ -> error "bad quantifier"
-pullOutAllQuantifiers False (Apply (Constant "∃") t) = case t of
-        (Lambda x ty body) -> fmap ((x,ty):) $ pullOutAllQuantifiers False body
-        _ -> error "bad quantifier"
-pullOutAllQuantifiers True (Apply (Constant "∃") t) = case t of
-        _ -> error "bad quantifier"
-pullOutAllQuantifiers b t = (t,[])
-
-
 smtTerm :: Term -> String
 smtTerm (Apply (Apply (Constant c) t1) t2)
     | c `elem` binaryOps = "({} {} {})"%[c, smtTerm t1, smtTerm t2]
