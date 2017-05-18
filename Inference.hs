@@ -80,7 +80,7 @@ inferSub (BoolT t1) (BoolT t2) = return $ aimplies t1 t2
 inferSub (ArrowT x IntT ty) (ArrowT y IntT ty_) = do
     z <- freshVar
     c <- inferSub (replaceInMT [(x,Variable z)] ty) (replaceInMT [(y,Variable z)] ty_)
-    return$aforall z Int c
+    return $ aforall z Int c
 inferSub (ArrowT "_" ty1 ty2) (ArrowT "_" ty1_ ty2_) = do
     c1 <- inferSub ty1_ ty1
     c2 <- inferSub ty2 ty2_
