@@ -1,3 +1,8 @@
+{-
+This module contains a number of operations for reducing the output
+e.g. turning 'x ^ true' into 'x'
+-}
+
 module Simplify(pullOutAllQuantifiers,stripQuantifiers,simp,proc)
     where
 
@@ -38,21 +43,21 @@ stripQuantifiers x = x
 simplify :: Term -> Term
 simplify (Apply (Apply (Constant "∧") (Constant "true")) t) = simplify t
 simplify (Apply (Apply (Constant "∧") t) (Constant "true")) = simplify t
---simplify (Apply (Apply (Constant "⇒") (Constant "true")) t) = simplify t technically valid, but breaks assumptions that we are working with Horn clauses
 simplify (Apply (Constant "∀") (Lambda x s (Constant "true"))) = (Constant "true")
 simplify (Apply t1 t2) = Apply (simplify t1) (simplify t2)
 simplify (Lambda x s t) = Lambda x s (simplify t)
 simplify t = t
 
-simp t = simp' t (simplify t) -- simp' <*> simplify
-simp' t t'= if t==t' then t else simp t'
+--Apply simplify until it has no further effect
+simp :: Term -> Term
+simp t = simp' t (simplify t)
+    where simp' t t'= if t==t' then t else simp t'
 
--- given a conjunctions of implications, apply the unfold simplification
--- do not unfold the other variables given
 
 type Clause = (Term,([String],String))
 
---apply the unfold simplification to a term
+-- given a conjunctions of implications, apply the unfold simplification
+-- do not unfold variable in 'preserved'
 proc :: Term -> [Variable] -> Term
 proc t preserved = unpreproc (f preserved [] ks) vss
     where (ks,vss) = preproc t
@@ -82,6 +87,7 @@ f vs ks1 ((body,(params,headvar)):ks2) = if headvar `elem` vs || headvar `elem` 
     else f vs (map sub ks1) (map sub ks2)
     where sub = \(x,y) -> (subs (body,(params,headvar)) [] x, y)
 
+-- substitute something for an instance 
 subs :: Clause -> [Term] -> Term -> Term
 subs (body,(params,v)) args (Variable x) = if x==v
     then if length args < length params

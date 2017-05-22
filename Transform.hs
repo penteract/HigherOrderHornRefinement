@@ -1,4 +1,9 @@
-module Transform(transform,checkHorn,transformProg,vlist,slist,split,occursIn, elim)
+{-
+Functions for transforming a higher-order constrained Horn clause problem into a logic safety problem
+See Section 3.2.
+-}
+
+module Transform(transformProg,vlist,slist,split,occursIn, elim)
     where
 
 import Fresh(Mfresh,freshVar)
@@ -16,21 +21,6 @@ unless :: String -> Bool -> Mfresh ()
 unless err cond = if cond then return () else throwError err
 
 
---Based on section 4 of the paper.
-
-transform d t = errorPart "Transformation" $ transform' d t
-
-transform' :: DeltaEnv -> Term -> Either String (String,Term)
-transform' e (Apply (Apply (Constant "⇒") a) b) = do
-    (vs,vb) <- vlist b
-    (ss,sb) <- slist $ fromJust $ lookup vb e
-    if length vs /= length ss 
-        then Left $ unlines [
-            "unexpected number of arguments",
-            "given "++show (length vs)++": "++show b,
-            "expected "++show (length ss)]
-        else Right (vb,foldr (\ (v,s) term -> (Lambda v s term)) a (zip vs ss))
-transform' _ _ = Left "Bad format"
 
 -- turns `P y z => X y z` into (`P x y`,(["y","z"],"X"))
 -- possibly returns an error
@@ -62,19 +52,15 @@ slist (Arrow a b) = do
     Right (a:as,x)
 slist Int = Left "Non-relational sort"
 
--- transforms a list of clauses, only used in tests
-checkHorn :: DeltaEnv -> [Term] -> Either String [(String,Term)]
-checkHorn e = mapM (transform e)
-
 occursIn :: Variable -> Term -> Bool
 occursIn x (Variable v) = x==v
 occursIn x (Constant _) = False
 occursIn x (Apply a b) = x `occursIn` a || x `occursIn` b
 occursIn x (Lambda y _ t) = x/=y && x `occursIn` t
 
--- Transforms a program as given in Section 4(Reduction to program evaluation) of the paper
+-- Transforms a program as given in Section 3.2
 -- turns foralls into lambdas and combines clauses with the same head
-transformProg :: DeltaEnv -> [Term] -> Mfresh [(Variable,Term)] --this is called (| |) in the paper
+transformProg :: DeltaEnv -> [Term] -> Mfresh [(Variable,Term)]
 transformProg d ts = errorPart "Transformation" $ do
     txsys <- lift $ mapM split ts
     let f (v,s) = do
@@ -86,11 +72,12 @@ transformProg d ts = errorPart "Transformation" $ do
             vs <- mapM (const freshVar) ss
             let ts = [replaceInTerm (zip xs (map Variable vs)) t | (t,(xs,y))<-txsys']
             "No clauses given for {}"%[v] `unless` ts/=[]
-            --"non-matching arguments for {}"%[v] `unless` all (==vs) xss
             lift $ mapM (checkSort (zip vs ss ++ d)) ts
             return (v,foldr (\ (v,s) term -> Lambda v s term) (foldl1 aor ts) (zip vs ss))
     mapM f d
 
+    
+-- Eliminate type guards. See Section 4.3.
 elim :: Term -> Mfresh Term
 elim (ExistsT x ty t) = do ll <- lar (Constant "false") ty
                            elim (replaceInTerm [(x,ll)] t)

@@ -12,17 +12,10 @@ import Inference(inferProg,infer)
 import DataTypes
 import Data.Maybe(fromJust)
 import Data.List
-import Control.Applicative--((<*>))
+import Control.Applicative
 import Simplify
 import Tools
 import Printing
-
-
-(<$*) :: Monad m => m a -> (a -> m b) -> m a
-(<$*) xm f = do
-    x<-xm
-    f x
-    return x
 
 data Opt = Opt
     { optHelp         :: Bool
@@ -91,7 +84,6 @@ usage handle = getProgName >>= hPutStrLn handle . flip usageInfo options .
      ""])
 
 
-
 main :: IO ()
 main = getArgs >>= (\(o,args,errs) -> case errs of
     (a:b) -> (hPutStrLn stderr (concat errs) >> usage stderr)
@@ -109,13 +101,16 @@ hSetUTF8 :: Handle -> IO ()
 hSetUTF8 = (flip hSetEncoding utf8)
 
 makeInpUTF :: IO Handle -> IO Handle
-makeInpUTF = (<$* hSetUTF8)
-
+makeInpUTF hm = do
+    h <- hm
+    hSetUTF8 h
+    return h
+    
 makeOutUTF :: ((Handle -> IO ()) -> IO ()) -> (Handle -> IO ()) -> IO ()
 makeOutUTF out operation = out (\ h -> hSetUTF8 h >> operation h)
 
 run :: String -> IO String -> ((DeltaEnv,Gamma,Term,Term) -> IO ()) -> IO ()
-run fname inp out = do --io monad
+run fname inp out = do --IO monad
     s<-inp
     case runStateT (do -- Mfresh monad (fresh vars + Exceptions)
         (delta,dd',goal') <- lift $ parseFile fname s

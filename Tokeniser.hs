@@ -1,3 +1,8 @@
+{-
+Functions for turning input text into a list of tokens.
+This module does not fix the syntax used, but accepts a list of constants to recognise.
+-}
+
 module Tokeniser(
     tokeniseFromOps,tokeniseFromFile,
     Token,
@@ -5,42 +10,43 @@ module Tokeniser(
     ) where
 
 import Data.Char
---import Text.ParserCombinators.Parsec(SourcePos)
+
 import Text.Parsec.Pos
 import Text.Parsec.Error
 import Data.List (partition,find,elemIndices)
 import Control.Applicative ((<|>))
 import Data.Maybe (fromJust,isJust)
 
-data TokenType = Operator | Identifier | Number | NewLine deriving (Show,Eq)
-type Token = (String,TokenType,SourcePos)
 
---
+type Token = (String,TokenType,SourcePos)
+data TokenType = Operator | Identifier | Number | NewLine deriving (Show,Eq)
+
+
 splitByStart :: [String] -> [(Char,[String])]
 splitByStart [] = []
 splitByStart ((c:a):ss) = (c,a:map tail startWithc):splitByStart rest
             where (startWithc,rest) = partition ((==c).head) ss
 splitByStart _ = error "does not expect the empty string"
 
+-- A search tree for constants
+-- This is slightly overkill - there enough constants to warrant it.
 data Tree = Tree [(Char,Tree)] (Maybe String) deriving Show
 
-
+-- Construct a Tree from a list of constants for faster lookups
 makeTree :: [String] -> Tree
-makeTree = maketreeh ""
-
-maketreeh :: [Char] -> [String] -> Tree
-maketreeh current ss =  Tree (map (\ (c,xs)-> (c,maketreeh (c:current) xs)) (splitByStart longer) ) curnode
-            where 
-               (node,longer) = partition (=="") ss
-               curnode = if node==[] then Nothing else Just (reverse current)
-
+makeTree = make' ""
+    where make' cur rest = let (node,longer) = partition (=="") rest in
+             Tree (map (\ (c,xs)-> (c, make' (c:cur) xs)) (splitByStart longer)) 
+                  (if node==[] then Nothing else Just (reverse cur))
                
--- get the longest match
+-- Get the longest match
 getFromTree :: Tree -> String -> Maybe (String,String)
 getFromTree (Tree ts mx) "" = mx>>=(\x->Just (x,""))
 getFromTree (Tree ts mx) s = (lookup (head s) ts >>= (\t -> getFromTree t (tail s))) 
             <|> (mx >>= (\x->Just (x,s)))
 
+
+-- The remainder of a piece of text.
 type Remainder = (String,SourcePos)
             
 getq :: TokenType -> (String -> (String,String)) -> (Remainder -> ([Token],Remainder))
@@ -51,7 +57,7 @@ getq typ f (ss,p) = ([(t,typ,p)] ,
             n = length $ elemIndices '\n' t
             c = length $ takeWhile (/='\n') $ reverse t
 
-
+-- A list of functions to be applied in order and detect the next token in a stream
 type Tgtrs = [(String -> Bool, Remainder -> ([Token],Remainder))]
 
 tokengetters :: Tree -> [(String -> Bool, Remainder -> ([Token],Remainder))]

@@ -1,3 +1,8 @@
+{-
+A module containing additional functions for printing.
+In particular, this includes functions for producing SMT-LIB output that can be processed by Z3
+-}
+
 module Printing(printOut,pprint,printInd,smtPrint,smtPrint2) where
 
 import DataTypes
@@ -52,6 +57,11 @@ smtTerm (Apply a b)  = "({} {})"% [smtApp a,smtTerm b]
 smtApp (Apply a b) = "{} {}"% [smtApp a,smtTerm b]
 smtApp x = smtTerm x
 
+
+-- Prints conjunctive terms on separate lines
+printLong :: Term -> String
+printLong (Apply (Apply (Constant "∧") t1) t2) = printLong t1 ++ '\n':printLong t2
+printLong x = prnt x
 
 --prints conjunctive terms on separate lines and indents foralls
 printInd' :: Int -> [(Variable,Sort)] -> Term -> String

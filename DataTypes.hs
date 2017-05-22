@@ -1,8 +1,15 @@
+{-
+Defines the basic data types such as sorts, terms and types.
+See Chapters 2 and 4.
+
+Includes functions needed to make instances of Show, as well as
+common definitions used to construct and manipulate formulas.
+-}
+
 module DataTypes where
 
 import Data.Maybe(fromJust,fromMaybe)
 import Data.List
-import Tools
 
 --Datatype definitions
 ---------------
@@ -13,35 +20,34 @@ data Sort = Arrow Sort Sort
 instance Show Sort where
     show = prns
 
-data MonoType = ArrowT Variable MonoType MonoType
-          | IntT | BoolT Term 
-    deriving (Eq)
-
---type Scheme = ([(Variable,Sort)],MonoType)
-
-instance Show MonoType where
-    show t = prnty t
-
-
+    
 type Variable = String
 type Constant = String
 data Term = Variable Variable
           | Constant Constant
           | Apply Term Term
           | Lambda Variable Sort Term
-          | ExistsT Variable MonoType Term
+          | ExistsT Variable MonoType Term --Type guards (Section 4.3)
           deriving (Eq)
 
 instance Show Term where
     show = prnt
 
-type DeltaEnv = [(Variable,Sort)]
-type Gamma = [(Variable,MonoType)]
+
+--Note that a monotype is simply called a type in the report
+data MonoType = ArrowT Variable MonoType MonoType 
+          | IntT | BoolT Term 
+    deriving (Eq)
+
+instance Show MonoType where
+    show t = prnty t
+
+type DeltaEnv = [(Variable,Sort)] --sort environment
+type Gamma = [(Variable,MonoType)] --type environment
 
 
 --functions for working with DataTypes
 ---------------
-
 
 --Gives the sort corresponding to a monotype
 flat :: MonoType -> Sort
@@ -88,7 +94,7 @@ freeVarsOfTy' xs (ArrowT x t1 t2) = union x1s x2s
           x2s = freeVarsOfTy' (x:xs) t2
 
 
---symbols
+--Symbols
 ---------------
 logicalConstants = ["true","false"]
 
@@ -127,9 +133,10 @@ printt (Lambda v s t) = 'λ' :  v++":"++prints s++"."++ printt t
 
 prints :: Sort -> String
 prints (Arrow a b) = '(' : prints a++ "->" ++ prints b ++ ")"
-prints x = show x
+prints x = prns x
 
 
+--prints nicely
 prns :: Sort -> String
 prns = prns' False
 
@@ -139,9 +146,9 @@ prns' _ Bool = "Bool"
 prns' True x = parise $ prns' False x
 prns' False (Arrow a b) = prns' True a++"->"++prns' False b
 
---prints nicely
 prnt :: Term -> String
 prnt t = prnt' 0 0 t
+
 
 parise :: String->String
 parise s = "("++s++")"
@@ -167,11 +174,6 @@ prnt' lp rp (Apply a b)  = if maxPrec<=lp
                               then parise (prnt' 0 maxPrec a ++ " " ++prnt' maxPrec 0 b)
                               else  prnt' lp maxPrec a ++ " " ++prnt' maxPrec rp b
 
-      {-                        
-prnsch :: Scheme -> String
-prnsch ([],t) = prnty t
-prnsch (ss,t) = "A "++intercalate " " (map (\(x,y)->x++":"++prns y) ss) ++ "." ++ prnty t
-    -}
 
 prnty :: MonoType -> String
 prnty = prnty' False
@@ -190,11 +192,7 @@ getprec' n (ops:rest) = map (flip (,) n) ops ++ getprec' (n+1) rest
 getprec2 = foldl (++) [] (map (uncurry $ map. flip (,)) (zip [1..] opsByPrec))
 maxPrec = length opsByPrec + 1
 
-printLong :: Term -> String --prints conjunctive terms on separate lines
-printLong (Apply (Apply (Constant "∧") t1) t2) = printLong t1 ++ '\n':printLong t2
-printLong x = prnt x
-
---helpful constructors
+-- Helpful constructors (apply 'and', apply 'or', etc)
 aand t1 t2 = (Apply (Apply (Constant "∧") t1) t2)
 aor t1 t2 = (Apply (Apply (Constant "∨") t1) t2)
 aforall x s t = (Apply (Constant "∀") (Lambda x s t))

@@ -1,26 +1,23 @@
+{-
+
+-}
 module Parser where
 
---import Text.ParserCombinators.Parsec.Combinator
---import Text.ParserCombinators.Parsec.Prim
-import Text.Parsec.Prim--(parserReturn)
-import Text.Parsec.Combinator
---import Text.Parsec
---import Text.Parsec.Prim
-import Data.Char
 import Tokeniser
+
+import Text.Parsec.Prim
+import Text.Parsec.Combinator
+
+import Data.Char
 import Data.Maybe
 import Data.List(sortBy)
 import Data.Ord(comparing)
 import DataTypes
-import Tools
 
 sortOn f = map snd . sortBy (comparing fst) . map (\x -> let y = f x in y `seq` (y, x))
 
 exists = "∃"
 forall = "∀"
-
-(.>) :: Monad m =>  (b -> m a) -> (a->c) -> b -> m c
-(.>) xm f y = (xm y) >>= return.f
 
 --get rid of unicode from output
 legiblise "" _ _ = ""
@@ -41,7 +38,6 @@ cannonicals = ll ++[ ("≤","<="),("−","-"),("→","->")]
 
 --setup 
 
-
 typeSymbols = ["->"]
 
 symbols :: [String]
@@ -56,7 +52,7 @@ cannonise x = x
 
 type MyParser a = Parsec [Token] () a
     
---get a single token if it matches a predicate
+--Get a single token if it matches a predicate
 testTok :: (Token-> Bool) -> MyParser String
 testTok p = token (\(a,b,c)->a)
             (\(a,b,c)->c)
@@ -67,7 +63,6 @@ testStr p = testTok (\(s,_,_)->p s)
 
 tok :: String -> MyParser String
 tok s = testStr (==s)
-
 
 oneOf :: [String] -> MyParser String
 oneOf [] = fail "not in set" 
@@ -95,7 +90,7 @@ variable :: MyParser Term
 variable = testTok (\ (_,t,_) ->t==Identifier) >>= return.Variable
 
 logicalConstant ::MyParser Term
-logicalConstant = testTok (\ (s,t,_) -> (t==Operator) && (s`elem`logicalConstants) ) >>= return.Constant
+logicalConstant = testTok (\ (s,t,_) -> (t==Operator) && (s`elem`logicalConstants)) >>= return.Constant
 
 sort :: MyParser Sort
 sort = chainr1 ((tok "int" >> return Int) <|> (tok "bool" >> return Bool) <|> parens sort)

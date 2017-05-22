@@ -1,8 +1,12 @@
+{-
+Implements the judgement freshTy given in Chapter 5.
+
+Also defines the monad Mfresh in which these judgements can be expressed
+-}
+
 module Fresh(freshVar,freshRel,freshTy,freshEnv,
     Mfresh, lift,runStateT)
     where
-
---Implements the judgements freshVar, freshTy and freshRel given in section 6 (Type inference) the paper
 
 
 import DataTypes
