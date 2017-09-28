@@ -6,7 +6,7 @@ version:             0.1.0.0
 -- synopsis:
 -- description:
 homepage:            http://mjolnir.cs.ox.ac.uk/horus/
--- license:
+license:             BSD3
 license-file:        LICENSE
 author:              Toby Cathcart Burn
 maintainer:          tcathcartburn@gmail.com
