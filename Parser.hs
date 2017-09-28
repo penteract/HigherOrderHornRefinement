@@ -31,12 +31,12 @@ ununicode :: String -> String
 ununicode s= legiblise s ll ll
 
 cannonicals :: [(String,String)]
-cannonicals = ll ++[ ("≤","<="),("−","-"),("→","->")]
+cannonicals = ll ++[("≤","<="),("≥",">="),("−","-"),("→","->")]
 
 --Parser
 ---------------
 
---setup 
+--setup
 
 typeSymbols = ["->"]
 
@@ -51,7 +51,7 @@ cannonise (x,Identifier,pos) = fromMaybe (x,Identifier,pos) (lookup x cannonical
 cannonise x = x
 
 type MyParser a = Parsec [Token] () a
-    
+
 --Get a single token if it matches a predicate
 testTok :: (Token-> Bool) -> MyParser String
 testTok p = token (\(a,b,c)->a)
@@ -65,14 +65,14 @@ tok :: String -> MyParser String
 tok s = testStr (==s)
 
 oneOf :: [String] -> MyParser String
-oneOf [] = fail "not in set" 
+oneOf [] = fail "not in set"
 oneOf (s:ss) = tok s <|> oneOf ss
 
 
 -- parse a sequence of left assoc binary operators in order of precedence (where some share precedence)
 opPrecl :: [[String]] -> MyParser Term -> MyParser Term
 opPrecl [] p = p
-opPrecl (ss:rest) p = chainl1 (opPrecl rest p) 
+opPrecl (ss:rest) p = chainl1 (opPrecl rest p)
                                  (do op <- (oneOf ss <?> "operator")
                                      return (\ a b -> Apply (Apply (Constant op) a) b))
 
@@ -114,8 +114,8 @@ monotype = chainr1 (
                return $ ArrowT x IntT ty)<|>
            parens monotype)
            (tok "->" >> return (ArrowT "_"))
-              
-              
+
+
 
 simpleTerm :: MyParser Term
 simpleTerm = parens formula
@@ -129,7 +129,7 @@ simpleFormula = (many1 simpleTerm >>= return . foldl1 Apply)
 
 tvlist :: MyParser [(Sort,Term)]
 tvlist = do x<-chainl1
-                (do vs<-vlist 
+                (do vs<-vlist
                     (tok ":")
                     s<-sort
                     return $ map ((,) s) vs)
@@ -209,7 +209,7 @@ parseFile fname contents = fromParse (do
         strip (c:rest) = c:strip' rest
         strip' (("\n",NewLine,p):rest) = ("\n",NewLine,p) : strip rest
         strip' x = strip x
-        
+
 fromParse (Left x) = Left $ show x
 fromParse (Right x) =  Right x
 

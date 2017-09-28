@@ -10,7 +10,7 @@ To build, simply run `ghc Main`.
 `Main inputFile outputFile` is the easiest way to call the program.
 `Main -h` gives more information about command line options.
 
-`tests/test.sh` should be called from the base diectory.
+`tests/test.sh` should be called from the base directory.
 It will run some tests then `git diff --stat tests` to check that the output is what it is supposed to be.
 It will produce no output if it runs without errors.
 
@@ -22,8 +22,6 @@ The last line must end in a semicolon.
 
 The **program** section must consist of a list of Horn clauses with the last terminated by a semicolon.
 There must be at least one clause where the head begins with `X` for each variable `X` in the environment.
-All heads of clauses that begin with the same variable must be identical;
-i.e. if `P y z => X y z` is a clause then another clause must be `Q y z => X y z` rather than `Q a b => X a b`.
 
 The **goal** section must consist of a single formula.
 
@@ -39,6 +37,7 @@ A    ∀
 E    ∃
 <=>  ⇔
 <=   ≤
+>=   ≥
 -    −
 ->   →
 ```
