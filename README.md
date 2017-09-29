@@ -2,17 +2,19 @@ Higher Order Horn Refinement
 ============================
 
 ##Build
-This uses the packages *parsec* and *mtl*, which can be installed using Cabal.
+can be built with cabal or stack
+`stack install`
+or
+`cabal configure`
+`cabal install --bindir=.`
+(these will create the executable `HigherOrderHornRefinement` on `PATH`)
 
-To build, simply run `ghc Main`.
+
+Alternatively, install the packages *parsec* and *mtl*, then run `ghc Main -o HigherOrderHornRefinement`.
 
 ##Run
-`Main inputFile outputFile` is the easiest way to call the program.
-`Main -h` gives more information about command line options.
-
-`tests/test.sh` should be called from the base directory.
-It will run some tests then `git diff --stat tests` to check that the output is what it is supposed to be.
-It will produce no output if it runs without errors.
+`HigherOrderHornRefinement inputFile outputFile` is the easiest way to call the program.
+`HigherOrderHornRefinement -h` gives more information about command line options.
 
 ##Input format
 For an example of a complete input file, see tests/test1.inp.
@@ -57,3 +59,8 @@ These work with z3 versions <=4.4.1 and >=4.4.2 respectively.
 The -x option outputs in unextended SMT-LIB format which works with all tested versions of Z3.
 It has not been tested with any SMT-LIB solvers other than Z3.
 Z3 version 4.4.2 produces simpler output with -z than with -x.
+
+##tests
+`tests/test.sh` should be called from the base directory (as `stack exec bash -- tests/test.sh` if `stack build` has been used but not `stack install`).
+It will run some tests then `git diff --stat tests` to check that the output is what it is supposed to be.
+It will produce no output if it runs without errors.
