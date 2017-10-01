@@ -61,6 +61,7 @@ It has not been tested with any SMT-LIB solvers other than Z3.
 Z3 version 4.4.2 produces simpler output with -z than with -x.
 
 ### Tests
-`tests/test.sh` should be called from the base directory (as `stack exec bash -- tests/test.sh` if `stack build` has been used but not `stack install`).
-It will run some tests then `git diff --stat tests` to check that the output is what it is supposed to be.
-It will produce no output if it runs without errors.
+Tests are in the form of bash scripts which should be called from the base directory. If `stack build` has been used but not `stack install` then the `stack exec` may be used e.g. `stack exec tests/test.sh`.
+
+`tests/test.sh` runs a small number of simple tests (2 of which require z3).
+`git diff` is used to check that the output. It will produce no output if it runs without errors (unless you using a different version of z3 in which case the the output line containing 'sat' or 'unsat' should not change).

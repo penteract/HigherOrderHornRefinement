@@ -1,3 +1,4 @@
+#!/bin/bash
 PATH=.:$PATH
 HigherOrderHornRefinement tests/test1.inp tests/test1.out
 cat tests/test1.inp | ./Main > tests/test1_2.out
