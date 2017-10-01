@@ -1,16 +1,19 @@
 Higher Order Horn Refinement
 ============================
 
+A Haskell implementation of the algorithm described in "Higher-Order Constrained Horn Clauses and Refinement Types"(Cathcart Burn, Ramsey, Ong). Transforms a higher-order Horn clause problem into a first order one. A web demo is available at http://mjolnir.cs.ox.ac.uk/horus/.
+
 ### Build
-can be built with cabal or stack
+The project can be built with the tools cabal or stack:
 `stack install`
 (this will create the executable `HigherOrderHornRefinement` on `PATH`)
 or
 `cabal configure`
 `cabal install --bindir=.`
 
-
 Alternatively, install the packages *parsec* and *mtl*, then run `ghc Main -o HigherOrderHornRefinement`.
+
+Z3, which can be obtained from https://github.com/Z3Prover/z3/releases is needed for some test cases.
 
 ### Run
 `HigherOrderHornRefinement inputFile outputFile` is the easiest way to call the program.
@@ -55,13 +58,12 @@ There is another line giving a first order goal clause.
 ### Use with z3
 The -z option outputs in the SMT-LIB2 format with the extensions described in http://rise4fun.com/Z3/tutorial/fixedpoints.
 
-
-The -x option outputs in unextended SMT-LIB format which works with all tested versions of Z3.
-It has not been tested with any SMT-LIB solvers other than Z3.
+The -x option outputs in unextended SMT-LIB2 format which works with all tested versions of Z3.
+It has not been tested with any SMT-LIB solvers other than Z3 (those that have been tried don't have the required fixpoint engine).
 Z3 version 4.4.2 produces simpler output with -z than with -x.
 
 ### Tests
-Tests are in the form of bash scripts which should be called from the base directory. If `stack build` has been used but not `stack install` then the `stack exec` may be used e.g. `stack exec tests/test.sh`.
+Tests are in the form of bash scripts which should be called from the base directory. If `stack build` has been used but not `stack install` then `stack exec` may be used e.g. `stack exec tests/test.sh`.
 
 `tests/test.sh` runs a small number of simple tests (2 of which require z3).
-`git diff` is used to check that the output. It will produce no output if it runs without errors (unless you using a different version of z3 in which case the the output line containing 'sat' or 'unsat' should not change).
+`git diff` is used to check the output. It will produce no output if it runs without errors (beyond differences between versions of z3).
