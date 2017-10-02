@@ -1,17 +1,21 @@
 Higher Order Horn Refinement
 ============================
 
-A Haskell implementation of the algorithm described in "Higher-Order Constrained Horn Clauses and Refinement Types"(Cathcart Burn, Ramsey, Ong). Transforms a higher-order Horn clause problem into a first order one. A web demo is available at http://mjolnir.cs.ox.ac.uk/horus/.
+A Haskell implementation of the algorithm described in "Higher-Order Constrained Horn Clauses for Verification"(Cathcart Burn, Ramsey, Ong). See section 5.4 for details. Transforms a higher-order Horn clause problem into a first order one. A web demo is available at http://mjolnir.cs.ox.ac.uk/horus/.
 
 ### Build
 The project can be built with the tools cabal or stack:
+
 `stack install`
 (this will create the executable `HigherOrderHornRefinement` on `PATH`)
-or
-`cabal configure`
-`cabal install --bindir=.`
 
-Alternatively, install the packages *parsec* and *mtl*, then run `ghc Main -o HigherOrderHornRefinement`.
+or
+```
+cabal configure
+cabal install --bindir=.
+```
+
+As a third alternative, install the packages *parsec* and *mtl*, then run `ghc Main -o HigherOrderHornRefinement`.
 
 Z3, which can be obtained from https://github.com/Z3Prover/z3/releases is needed for some test cases.
 
