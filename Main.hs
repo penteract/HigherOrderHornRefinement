@@ -22,8 +22,9 @@ data Opt = Opt
     , optHandleIn     :: IO Handle -> IO Handle
     , optHandleOut    :: ((Handle -> IO ()) -> IO ()) -> (Handle -> IO ()) -> IO ()
     , optTermOut      :: (DeltaEnv,Gamma,Term,Term) -> (DeltaEnv,Gamma,Term,Term)
-    , optTermPrint    :: (DeltaEnv,Gamma,Term,Term) -> String
+    , optTermPrint    :: (DeltaEnv,Gamma,Term,Term,Bool) -> String
     , optStringOut    :: String -> String
+    , optSuppress     :: Bool
     }
 
 defaultOpts = Opt
@@ -31,9 +32,10 @@ defaultOpts = Opt
     , optHandleIn     = makeInpUTF
     , optHandleOut    = makeOutUTF
     , optTermOut      = \(d,g,t,goalt)->(d,g,simp t,simp goalt)
-    , optTermPrint    = \(d,g,t,goalt)->(unlines $
+    , optTermPrint    = \(d,g,t,goalt,s)->(unlines $
       [printOut t,"","goal:",show goalt])--printInd
     , optStringOut    = ununicode
+    , optSuppress      = False
     }
 
 options :: [OptDescr (Opt -> Opt)]
@@ -45,7 +47,7 @@ options =
         (NoArg (\opts -> opts{optStringOut=id}))
         "output in unicode"
     , Option ['l'] []
-        (NoArg (\opts -> opts{optTermPrint = \(d,g,t,goalt)->unlines $
+        (NoArg (\opts -> opts{optTermPrint = \(d,g,t,goalt,s)->unlines $
             [printInd t,"","goal:",show goalt]}))
         "print output in a longer format"
     , Option ['n'] []
@@ -58,8 +60,11 @@ options =
             let t2 = proc t (foldl1 union (freeVars gt:map (freeVarsOfTy.snd) g)) in
                 (filter ((`occursIn` t2) . fst) d,g,t2,gt)) . optTermOut opts}))
         "apply the unfold reduction to output"
+    , Option ['s'] []
+        (NoArg (\opts -> opts{optSuppress = True}))
+        "Supress printing models (for use with -x or -z)"
     , Option ['t'] []
-        (NoArg (\opts -> opts{optTermPrint = (\(d,g,t,gt)-> unlines $ map show g++map show d++"":[optTermPrint opts (d,g,t,gt)])}))
+        (NoArg (\opts -> opts{optTermPrint = (\(d,g,t,gt,s)-> unlines $ map show g++map show d++"":[optTermPrint opts (d,g,t,gt,s)])}))
         "Output additional information about types"
     , Option ['x'] []
         (NoArg (\opts -> opts{optTermPrint = smtPrint2}))
@@ -73,7 +78,7 @@ applyOpts :: Opt -> String -> IO Handle -> ((Handle -> IO ()) -> IO ()) -> IO ()
 applyOpts opt fname inh out = run fname
     (optHandleIn opt inh>>=hGetContents)
     (optHandleOut opt out . flip hPutStrLn
-        . optStringOut opt . optTermPrint opt . optTermOut opt)
+        . optStringOut opt . (\(a,b,c,d) -> optTermPrint opt (a,b,c,d,optSuppress opt)) . optTermOut opt)
 
 usage handle = getProgName >>= hPutStrLn handle . flip usageInfo options .
   (\n-> unlines
@@ -105,7 +110,7 @@ makeInpUTF hm = do
     h <- hm
     hSetUTF8 h
     return h
-    
+
 makeOutUTF :: ((Handle -> IO ()) -> IO ()) -> (Handle -> IO ()) -> IO ()
 makeOutUTF out operation = out (\ h -> hSetUTF8 h >> operation h)
 

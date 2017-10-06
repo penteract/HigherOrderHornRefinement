@@ -1,0 +1,464 @@
+ack.inp
+   Example ML
+let rec ackermann m n =
+  if m=0 then
+    n+1
+  else if n=0 then
+    ackermann (m-1) 1
+  else
+    ackermann (m-1) (ackermann m (n-1))
+let main m n = if (m>=0 && n>=0) then assert (ackermann m n >= n)
+
+   Equivalent higher-order Horn clause problem
+environment
+ack : int->int->int->bool;
+
+program
+m=0 ^ r=n+1 => ack m n r
+m>0 ^ n = 0 ^ ack (m-1) 1 r => ack m n r
+m>0^n>0 ^ (E x:int.ack m (n-1) x ^ ack (m-1) x r) => ack m n r;
+
+goal
+E m,n,r:int. m>=0 ^ n>=0 ^ ack m n r ^ r < n
+
+   After Transformation
+x_11 = 0 ^ x_13 = x_12 + 1 \/ x_11 > 0 ^ x_12 = 0 ^ x_6 x_13 1 (x_11 - 1) \/ x_11 > 0 ^ x_12 > 0 ^ (E x_10:Int.x_6 x_10 (x_12 - 1) x_11 ^ x_6 x_13 x_10 (x_11 - 1)) => x_6 x_13 x_12 x_11
+
+goal:
+E x_14:Int.E x_15:Int.E x_16:Int.x_14 >= 0 ^ x_15 >= 0 ^ x_6 x_16 x_15 x_14 ^ x_16 < x_15
+
+
+   Z3 result
+a result of unsat means that there is a model for the program clauses in which the goal clause does not hold
+unsat
+----------------
+
+a-max-e.inp
+   Example ML
+let make_array n i = n - i
+let rec array_max (n:int) i (a:int->int) m =
+  if i >= n then
+    m
+  else
+    let x = a i in
+    let z = if x>m then x else m in
+    array_max n (i+1) a z
+let main n i =
+  if n>0 && i>=0 && i<=0 then
+    let m = array_max n i (make_array n) (-1) in
+    assert (m >= n)
+
+   Equivalent higher-order Horn clause problem
+environment
+make_array : int->int->int->bool
+array_max:int->int->(int->int->bool)->int->int->bool;
+
+program
+n = i + r => make_array n i r
+i>=n ^ r = m => array_max n i a m r
+i<n ^ (E x : int.a i x ^ (E z:int.((x>m ^ z=x)\/(x<=m ^ z=m)) ^(E w:int. w=i+1 ^ array_max n w a z r))) => array_max n i a m r;
+
+goal
+E n,m,i,x:int.i=0 ^ x=0-1 ^ n>0 ^ array_max n i (make_array n) x m ^ m+1<n
+
+   After Transformation
+x_11 x_50 x_49 x_45 => x_16 x_50 x_49 x_47 x_45
+x_40 >= x_39 ^ x_44 = x_43 \/ x_40 < x_39 ^ (E x_31:Int.x_16 x_31 x_40 x_40 x_39 ^ E x_32:Int.(x_31 > x_43 ^ x_32 = x_31 \/ x_31 <= x_43 ^ x_32 = x_43) ^ E x_33:Int.x_33 = x_40 + 1 ^ x_19 x_44 x_32 x_33 x_39) => x_19 x_44 x_43 x_40 x_39
+x_16 x_35 x_34 x_24 x_23 => x_16 x_35 x_34 x_33 x_23
+x_36 = x_37 + x_38 => x_11 x_38 x_37 x_36
+
+goal:
+E x_45:Int.E x_46:Int.E x_47:Int.E x_48:Int.x_47 = 0 ^ x_48 = 0 - 1 ^ x_45 > 0 ^ x_19 x_46 x_48 x_47 x_45 ^ x_46 + 1 < x_45
+
+
+   Z3 result
+a result of unsat means that there is a model for the program clauses in which the goal clause does not hold
+unsat
+----------------
+
+a-max.inp
+   Example ML
+let make_array n i = n - i
+let rec array_max (n:int) i (a:int->int) m =
+  if i >= n then
+    m
+  else
+    let x = a i in
+    let z = if x>m then x else m in
+    array_max n (i+1) a z
+let main n i =
+  if n>0 && i>=0 && i<=0 then
+    let m = array_max n i (make_array n) (-1) in
+    assert (m >= n)
+
+   Equivalent higher-order Horn clause problem
+environment
+make_array : int->int->int->bool
+array_max:int->int->(int->int->bool)->int->int->bool;
+
+program
+n = i + r => make_array n i r
+i>=n ^ r = m => array_max n i a m r
+i<n ^ (E x : int.a i x ^ (E z:int.((x>m ^ z=x)\/(x<=m ^ z=m)) ^(E w:int. w=i+1 ^ array_max n w a z r))) => array_max n i a m r;
+
+goal
+E n,m,i,x:int.i=0 ^ x=0-1 ^ n>0 ^ array_max n i (make_array n) x m ^ m<n
+
+   After Transformation
+x_11 x_50 x_49 x_45 => x_16 x_50 x_49 x_47 x_45
+x_40 >= x_39 ^ x_44 = x_43 \/ x_40 < x_39 ^ (E x_31:Int.x_16 x_31 x_40 x_40 x_39 ^ E x_32:Int.(x_31 > x_43 ^ x_32 = x_31 \/ x_31 <= x_43 ^ x_32 = x_43) ^ E x_33:Int.x_33 = x_40 + 1 ^ x_19 x_44 x_32 x_33 x_39) => x_19 x_44 x_43 x_40 x_39
+x_16 x_35 x_34 x_24 x_23 => x_16 x_35 x_34 x_33 x_23
+x_36 = x_37 + x_38 => x_11 x_38 x_37 x_36
+
+goal:
+E x_45:Int.E x_46:Int.E x_47:Int.E x_48:Int.x_47 = 0 ^ x_48 = 0 - 1 ^ x_45 > 0 ^ x_19 x_46 x_48 x_47 x_45 ^ x_46 < x_45
+
+
+   Z3 result
+a result of unsat means that there is a model for the program clauses in which the goal clause does not hold
+unsat
+----------------
+
+hrec.inp
+   Example ML
+let rec f g x = if x>=0 then g x else f (f g) (g x)
+let succ x = x+1
+let main n = assert (f succ n >= 0)
+
+   Equivalent higher-order Horn clause problem
+environment
+f : (int->int->bool)->int->int->bool
+succ : int->int->bool;
+
+program
+r=x+1 => succ x r
+x>=0 ^ g x r => f g x r
+x < 0 ^ (E y:int. g x y ^ f (f g) y r) => f g x r;
+
+goal
+∃ n,r:int. (f succ n r) ^ r < 0
+   After Transformation
+x_13 x_36 x_35 => x_7 x_36 x_35
+x_32 = x_31 + 1 => x_13 x_32 x_31
+x_29 >= 0 ^ x_7 x_30 x_29 \/ x_29 < 0 ^ (E x_20:Int.x_7 x_20 x_29 ^ x_10 x_30 x_20) => x_10 x_30 x_29
+x_10 x_24 x_23 => x_7 x_24 x_23
+x_7 x_22 x_21 => x_7 x_22 x_21
+
+goal:
+E x_33:Int.E x_34:Int.x_10 x_34 x_33 ^ x_34 < 0
+
+
+   Z3 result
+a result of unsat means that there is a model for the program clauses in which the goal clause does not hold
+unsat
+----------------
+
+max.inp
+   Example ML
+let max max2 (x:int) (y:int) (z:int) : int = max2 (max2 x y) z
+let f x y : int = if x >= y then x else y
+let main (x:int) y z =
+  let m = max f x y z in
+  assert (f x m = m)
+
+   Equivalent higher-order Horn clause problem
+environment
+max : (int->int->int->bool)->int->int->int->int->bool
+f : int->int->int->bool;
+
+program
+( E p : int. m x y p ∧ m p z r ) => max m x y z r
+x < y ∧ r = y => f x y r
+y <= x ∧ r = x => f x y r;
+
+goal
+E x,y,z,m,n:int. max f x y z m ∧ f x m n ∧ (m < n ∨ n < m)
+
+   After Transformation
+x_20 x_51 x_50 x_49 => x_11 x_51 x_50 x_49
+x_41 < x_42 ^ x_43 = x_42 \/ x_42 <= x_41 ^ x_43 = x_41 => x_20 x_43 x_42 x_41
+(E x_30:Int.x_11 x_30 x_38 x_37 ^ x_11 x_40 x_39 x_30) => x_16 x_40 x_39 x_38 x_37
+
+goal:
+E x_44:Int.E x_45:Int.E x_46:Int.E x_47:Int.E x_48:Int.x_16 x_47 x_46 x_45 x_44 ^ x_20 x_48 x_47 x_44 ^ (x_47 < x_48 \/ x_48 < x_47)
+
+
+   Z3 result
+a result of unsat means that there is a model for the program clauses in which the goal clause does not hold
+unsat
+----------------
+
+mc91-e.inp
+   Example ML
+let rec mc91 x =
+  if x > 100 then
+		  x - 10
+  else
+		  mc91 (mc91 (x + 11))
+let main n = if n <= 102 then assert (mc91 n = 91)
+
+   Equivalent higher-order Horn clause problem
+environment
+mc91 : int->int->bool;
+
+program
+x > 100 ^ r = x-10 => mc91 x r
+x<=100 ^ (E y:int.(mc91 (x+11) y) ^ mc91 y r) => mc91 x r;
+
+goal
+E x,y:int. x<=102 ^ (y<91 \/ y>91) ^ mc91 x y
+
+   After Transformation
+x_8 > 100 ^ x_9 = x_8 - 10 \/ x_8 <= 100 ^ (E x_7:Int.x_4 x_7 (x_8 + 11) ^ x_4 x_9 x_7) => x_4 x_9 x_8
+
+goal:
+E x_10:Int.E x_11:Int.x_10 <= 102 ^ (x_11 < 91 \/ x_11 > 91) ^ x_4 x_11 x_10
+
+
+   Z3 result
+a result of unsat means that there is a model for the program clauses in which the goal clause does not hold
+sat
+----------------
+
+mc91.inp
+   Example ML
+let rec mc91 x =
+  if x > 100 then
+    x - 10
+  else
+    mc91 (mc91 (x + 11))
+let main n = if n <= 101 then assert (mc91 n = 91)
+
+   Equivalent higher-order Horn clause problem
+environment
+mc91 : int->int->bool;
+
+program
+x > 100 ^ r = x-10 => mc91 x r
+x<=100 ^ (E y:int.(mc91 (x+11) y) ^ mc91 y r) => mc91 x r;
+
+goal
+E x,y:int. x<=101 ^ (y<91 \/ y>91) ^ mc91 x y
+
+   After Transformation
+x_8 > 100 ^ x_9 = x_8 - 10 \/ x_8 <= 100 ^ (E x_7:Int.x_4 x_7 (x_8 + 11) ^ x_4 x_9 x_7) => x_4 x_9 x_8
+
+goal:
+E x_10:Int.E x_11:Int.x_10 <= 101 ^ (x_11 < 91 \/ x_11 > 91) ^ x_4 x_11 x_10
+
+
+   Z3 result
+a result of unsat means that there is a model for the program clauses in which the goal clause does not hold
+unsat
+----------------
+
+mult-e.inp
+   Example ML
+let rec mult n m =
+  if n <= 0 || m <= 0 then
+    0
+  else
+    n + mult n (m-1)
+let main n = assert (n+1 <= mult n n)
+
+   Equivalent higher-order Horn clause problem
+environment
+mult : int->int->int->bool;
+
+program
+(n<=0 \/ m<=0) ^ r=0 => mult n m r
+n>0 ^ m>0 ^ (E x,y:int.r=x+n ^ y=m-1 ^ mult n y x) => mult n m r;
+
+goal
+E n,r:int. n>0 ^ mult n n r ^ n+1>r;
+
+   After Transformation
+(x_12 <= 0 \/ x_13 <= 0) ^ x_14 = 0 \/ x_12 > 0 ^ x_13 > 0 ^ (E x_10:Int.E x_11:Int.x_14 = x_10 + x_12 ^ x_11 = x_13 - 1 ^ x_6 x_10 x_11 x_12) => x_6 x_14 x_13 x_12
+
+goal:
+E x_15:Int.E x_16:Int.x_15 > 0 ^ x_6 x_16 x_15 x_15 ^ x_15 + 1 > x_16
+
+
+   Z3 result
+a result of unsat means that there is a model for the program clauses in which the goal clause does not hold
+sat
+----------------
+
+mult.inp
+   Example ML
+let rec mult n m =
+  if n <= 0 || m <= 0 then
+    0
+  else
+    n + mult n (m-1)
+let main n = assert (n <= mult n n)
+
+   Equivalent higher-order Horn clause problem
+environment
+mult : int->int->int->bool;
+
+program
+(n<=0 \/ m<=0) ^ r=0 => mult n m r
+n>0 ^ m>0 ^ (E x,y:int.r=x+n ^ y=m-1 ^ mult n y x) => mult n m r;
+
+goal
+E n,r:int. mult n n r ^ n>r;
+
+   After Transformation
+(x_12 <= 0 \/ x_13 <= 0) ^ x_14 = 0 \/ x_12 > 0 ^ x_13 > 0 ^ (E x_10:Int.E x_11:Int.x_14 = x_10 + x_12 ^ x_11 = x_13 - 1 ^ x_6 x_10 x_11 x_12) => x_6 x_14 x_13 x_12
+
+goal:
+E x_15:Int.E x_16:Int.x_6 x_16 x_15 x_15 ^ x_15 > x_16
+
+
+   Z3 result
+a result of unsat means that there is a model for the program clauses in which the goal clause does not hold
+unsat
+----------------
+
+neg.inp
+   Example ML
+let g (x:int) (y:unit) = x
+let twice f (x:unit->int) (y:unit) = f (f x) y
+let neg x (y:unit) = - x ()
+let main n =
+  if n>=0 then
+    let z = twice neg (g n) () in
+    assert (z>=0)
+
+   Equivalent higher-order Horn clause problem
+environment
+g : int->int->bool
+#twice : (int->int->bool)->int->int->bool
+twice : (int->int->bool)->(int->bool)->int->bool
+neg : int->int->bool;
+
+program
+x=r => g x r
+(E i,j:int. x i ^ f i j ^ f j r )=> twice f x r
+#(x r )=> twice f x r # <- this version has the problem as well
+#(E j:int. f x j ^ f j r )=> twice f x r
+x+r=0 => neg x r;
+
+goal
+#E n,z,i:int. n>=0 ^ g n i ^ twice neg i  z ^ z<0;
+E n,z:int. n>=0 ^ twice neg (g n) z ^ z<0;
+
+   After Transformation
+x_9 x_46 x_42 => x_14 x_46
+x_19 x_45 x_44 => x_12 x_45 x_44
+x_40 + x_41 = 0 => x_19 x_41 x_40
+(E x_30:Int.E x_31:Int.x_14 x_30 ^ x_12 x_31 x_30 ^ x_12 x_39 x_31) => x_16 x_39
+x_34 = x_35 => x_9 x_35 x_34
+
+goal:
+E x_42:Int.E x_43:Int.x_42 >= 0 ^ x_16 x_43 ^ x_43 < 0
+
+
+   Z3 result
+a result of unsat means that there is a model for the program clauses in which the goal clause does not hold
+sat
+----------------
+
+repeat-e.inp
+   Example ML
+let succ x = x + 1
+let rec repeat (f:int->int) n s : int =
+  if n = 0 then
+    s
+  else
+    f (repeat f (n-1) s)
+let main n = assert (repeat succ n 0 > n)
+
+   Equivalent higher-order Horn clause problem
+environment
+succ : int->int->bool
+repeat : (int->int->bool)->int->int->int->bool;
+
+program
+r=n+1 => succ n r
+n <= 0 ^ r=s => repeat f n s r
+n>0 ^ (E i,j:int. i=n-1 ^ repeat f i s j ^ f j r ) => repeat f n s r;
+
+goal
+E n,r:int. n>0 ^ repeat succ n 0 r ^ r <= n
+
+   After Transformation
+x_8 x_39 x_38 => x_11 x_39 x_38
+x_33 <= 0 ^ x_35 = x_34 \/ x_33 > 0 ^ (E x_25:Int.E x_26:Int.x_25 = x_33 - 1 ^ x_15 x_26 x_34 x_25 ^ x_11 x_35 x_26) => x_15 x_35 x_34 x_33
+x_11 x_28 x_27 => x_11 x_28 x_27
+x_30 = x_29 + 1 => x_8 x_30 x_29
+
+goal:
+E x_36:Int.E x_37:Int.x_36 > 0 ^ x_15 x_37 0 x_36 ^ x_37 <= x_36
+
+
+   Z3 result
+a result of unsat means that there is a model for the program clauses in which the goal clause does not hold
+sat
+----------------
+
+sum-e.inp
+   Example ML
+let rec sum n =
+  if n <= 0 then
+    0
+  else
+    n + sum (n-1)
+let main n = assert (n+1 <= sum n)
+
+   Equivalent higher-order Horn clause problem
+environment
+sum : int->int->bool;
+
+program
+n <= 0 ^ r=0 => sum n r
+n > 0 ^ (E x:int. sum (n-1) x ^ r = n + x) => sum n r;
+
+goal
+E x,y:int. sum x y ^ x+1 > y
+
+   After Transformation
+x_8 <= 0 ^ x_9 = 0 \/ x_8 > 0 ^ (E x_7:Int.x_4 x_7 (x_8 - 1) ^ x_9 = x_8 + x_7) => x_4 x_9 x_8
+
+goal:
+E x_10:Int.E x_11:Int.x_4 x_11 x_10 ^ x_10 + 1 > x_11
+
+
+   Z3 result
+a result of unsat means that there is a model for the program clauses in which the goal clause does not hold
+sat
+----------------
+
+sum.inp
+   Example ML
+let rec sum n =
+  if n <= 0 then
+    0
+  else
+    n + sum (n-1)
+let main n = assert (n <= sum n)
+
+   Equivalent higher-order Horn clause problem
+environment
+sum : int->int->bool;
+
+program
+n <= 0 ^ r=0 => sum n r
+n > 0 ^ (E x:int. sum (n-1) x ^ r = n + x) => sum n r;
+
+goal
+E x,y:int. sum x y ^ x > y
+
+   After Transformation
+x_8 <= 0 ^ x_9 = 0 \/ x_8 > 0 ^ (E x_7:Int.x_4 x_7 (x_8 - 1) ^ x_9 = x_8 + x_7) => x_4 x_9 x_8
+
+goal:
+E x_10:Int.E x_11:Int.x_4 x_11 x_10 ^ x_10 > x_11
+
+
+   Z3 result
+a result of unsat means that there is a model for the program clauses in which the goal clause does not hold
+unsat
+----------------
+

@@ -71,3 +71,5 @@ Tests are in the form of bash scripts which should be called from the base direc
 
 `tests/test.sh` runs a small number of simple tests (2 of which require z3).
 `git diff` is used to check the output. It will produce no output if it runs without errors (beyond differences between versions of z3).
+
+`tests/mochi.sh` creates or modifies the file `tests/allmochi.out`. This demonstrates the cases where we can solve the first order problem arising from the transformation and agree with those obtained by mochi (`amax-e` is an exception since the original code is identical to `amax`).
