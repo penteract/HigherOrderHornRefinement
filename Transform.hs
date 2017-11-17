@@ -33,7 +33,7 @@ split t = do
 
 split' ::Term -> Either String (Term,([String],String))
 split' (Apply (Apply (Constant "⇒") a) b) = vlist b >>= return . (,) a
-split' _ = Left "not in Horn clause format"
+split' t = Left ("not in Horn clause format\n"++show t)
 
 -- given `X y z`, returns (["y","z"],"X")
 vlist :: Term -> Either String ([String],String)
@@ -76,7 +76,7 @@ transformProg d ts = errorPart "Transformation" $ do
             return (v,foldr (\ (v,s) term -> Lambda v s term) (foldl1 aor ts) (zip vs ss))
     mapM f d
 
-    
+
 -- Eliminate type guards. See Section 4.3.
 elim :: Term -> Mfresh Term
 elim (ExistsT x ty t) = do ll <- lar (Constant "false") ty
@@ -93,7 +93,7 @@ com (ArrowT "_" ty1 ty2) z = lar (Constant "false") ty1 >>= com ty2 . Apply z
 
 lar :: Term -> MonoType -> Mfresh Term
 lar g (BoolT phi) = return $ aor g phi
-lar g (ArrowT x IntT ty) = liftM (Lambda x Int) (lar g ty) 
+lar g (ArrowT x IntT ty) = liftM (Lambda x Int) (lar g ty)
 lar g (ArrowT "_" ty1 ty2) = do
   z <- freshVar
   c <- com ty1 (Variable z)

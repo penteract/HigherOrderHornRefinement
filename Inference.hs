@@ -32,12 +32,12 @@ infer :: Gamma -> Term -> Mfresh (DeltaEnv,Term,MonoType)
 infer g (Variable v) = do
     ty <- case lookup v g of
                Just x -> return x
-               Nothing -> throwError (v++" not found") 
+               Nothing -> throwError (v++" not found")
     return ([], Constant "true", ty) --(Var)
-    where 
+    where
         ty = case lookup v g of
                           Just x -> x
-                          Nothing -> error (v++" not found") 
+                          Nothing -> error (v++" not found")
 infer g (Apply (Apply (Constant "∧") t1) t2) = do
     (d1,c1,BoolT phi) <- infer g t1
     (d2,c2,BoolT psi) <- infer g t2
@@ -61,8 +61,9 @@ infer g (Apply t1 t2) = do
              (d2,c2,ty2) <- infer g t2
              c3 <- inferSub ty2 ty1
              return (d1++d2, aand (aand c1 c2) c3, ty)--(AppR)
-         _ -> throwError (show dcty ++show t1 ++ show t2++";"++show g)
-         
+         _ -> throwError ("applying term with non-function type\n"++
+                          show dcty ++show t1 ++ show t2++";"++show g)
+
 infer g (Lambda x Int t) = do
     v <- freshVar
     (d1,c,ty) <- infer ((v,IntT):g) (replaceInTerm [(x,Variable v)] t)
@@ -80,7 +81,7 @@ inferSub (ArrowT x IntT ty) (ArrowT y IntT ty_) = do
     z <- freshVar
     c <- inferSub (replaceInMT [(x,Variable z)] ty) (replaceInMT [(y,Variable z)] ty_)
     return $ aforall z Int c--(SubI)
-inferSub (ArrowT "_" ty1 ty2) (ArrowT "_" ty1_ ty2_) = do 
+inferSub (ArrowT "_" ty1 ty2) (ArrowT "_" ty1_ ty2_) = do
     c1 <- inferSub ty1_ ty1
     c2 <- inferSub ty2 ty2_
     return $ aand c1 c2--(SubR)

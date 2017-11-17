@@ -13,6 +13,7 @@ import Data.Maybe
 import Data.List(sortBy)
 import Data.Ord(comparing)
 import DataTypes
+import Control.Applicative((<**>))
 
 sortOn f = map snd . sortBy (comparing fst) . map (\x -> let y = f x in y `seq` (y, x))
 
@@ -133,7 +134,7 @@ tvlist = do x<-chainl1
                     (tok ":")
                     s<-sort
                     return $ map ((,) s) vs)
-              (tok ",">>return (++))
+                (tok ",">>return (++))
             tok "."
             return x
 
@@ -147,18 +148,17 @@ negation = (tok "¬" >> (quantified <|> negation) >>= return.(Apply (Constant "�
 
 
 quantified :: MyParser Term
-quantified = try
-            (do q <- oneOf logicalQuantifiers
-                tvs <- tvlist
-                body <- formula
-                return $ fromtvlist q tvs body) <|>
-            (do tok "∃"
-                (Variable v) <- variable
-                tok ":"
-                ty <- monotype
-                tok "."
-                body <- formula
-                return (ExistsT v ty body)) --Really don't want to do reduction here
+quantified = (try (do q <- oneOf logicalQuantifiers
+                      tvs <- tvlist
+                      return $ fromtvlist q tvs)
+              <|> (do tok "∃"
+                      (Variable v) <- variable
+                      tok ":"
+                      ty <- monotype
+                      tok "."
+                      return (ExistsT v ty))) --Really don't want to do reduction here
+    <*> formula
+
 
 formula :: MyParser Term
 formula = quantified
