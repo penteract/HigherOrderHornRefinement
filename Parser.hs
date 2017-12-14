@@ -43,7 +43,7 @@ typeSymbols = ["->"]
 
 symbols :: [String]
 symbols = logicalSymbols ++ ilaOps ++ ilaRels++ typeSymbols
-    ++ ["(",")",":",".",",",";","[","]"]
+    ++ ["(",")",":",".",",",";","[","]"] ++ ["program","goal","environment"]
     -- ++ ["environment","program","goal"]
 
 cannonise :: Token -> Token
@@ -176,39 +176,33 @@ parser = do res <- chainl lineParser (tok "\n" >> return (++)) []
 
 
 
-environment :: MyParser DeltaEnv
-environment = chainl (do
-    (Variable v) <- variable
-    tok ":"
-    s<-sort
-    return [(v,s)])
-    (tok "\n">>return (++)) []
+environmentLine :: MyParser DeltaEnv
+environmentLine = (do
+      (Variable v) <- variable
+      tok ":"
+      s<-sort
+      return [(v,s)])
+    <|> return []
 
-separator = tok ";" >> tok "\n"
+separator = (tok ";" >> tok "\n") <|> tok "\n" <|> return ""
 
 file :: MyParser (DeltaEnv,[Term],Term)
 file = do
     tok "environment" >> tok "\n"
-    d <- environment
+    d <- chainl1 environmentLine (tok "\n">>return (++))
     separator >> tok "program" >> tok "\n"
-    prog <- chainl lineParser (tok "\n" >> return (++)) []
+    prog <- chainl1 lineParser (tok "\n" >> return (++))
     separator >> tok "goal" >> tok "\n"
     goal <- formula
-    eof <|> ((tok "\n" <|> separator <|> tok ";") >> eof)
+    eof <|> (tok ";" >> eof)
     return (d,prog,goal)
 
 
 parseFile :: String -> String -> Either String (DeltaEnv,[Term],Term)
 parseFile fname contents = fromParse (do
     ts <- tokeniseFromFile (symbols ++ map fst cannonicals) fname contents
-    let body = strip (map cannonise ts)
+    let body = map cannonise ts
     runParser file () fname body)
-    where
-        strip [] = []
-        strip (("\n",NewLine,_):rest) = strip rest
-        strip (c:rest) = c:strip' rest
-        strip' (("\n",NewLine,p):rest) = ("\n",NewLine,p) : strip rest
-        strip' x = strip x
 
 fromParse (Left x) = Left $ show x
 fromParse (Right x) =  Right x

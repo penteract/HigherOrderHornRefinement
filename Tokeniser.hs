@@ -1,6 +1,9 @@
 {-
 Functions for turning input text into a list of tokens.
-This module does not fix the syntax used, but accepts a list of constants to recognise.
+These accept a list of constants to recognise.
+Newlines followed by whitespace are ignored
+    (so you can have multiline definitions if later lines start with whitespace)
+Comments begin with #, the remainder of the line is ignored
 -}
 
 module Tokeniser(
@@ -16,6 +19,7 @@ import Text.Parsec.Error
 import Data.List (partition,find,elemIndices)
 import Control.Applicative ((<|>))
 import Data.Maybe (fromJust,isJust)
+import Data.Bifunctor
 
 
 type Token = (String,TokenType,SourcePos)
@@ -36,46 +40,51 @@ data Tree = Tree [(Char,Tree)] (Maybe String) deriving Show
 makeTree :: [String] -> Tree
 makeTree = make' ""
     where make' cur rest = let (node,longer) = partition (=="") rest in
-             Tree (map (\ (c,xs)-> (c, make' (c:cur) xs)) (splitByStart longer)) 
-                  (if node==[] then Nothing else Just (reverse cur))
-               
+             Tree (map (\ (c,xs)-> (c, make' (c:cur) xs)) (splitByStart longer))
+                  (if null node then Nothing else Just (reverse cur))
+
 -- Get the longest match
 getFromTree :: Tree -> String -> Maybe (String,String)
 getFromTree (Tree ts mx) "" = mx>>=(\x->Just (x,""))
-getFromTree (Tree ts mx) s = (lookup (head s) ts >>= (\t -> getFromTree t (tail s))) 
+getFromTree (Tree ts mx) s = (lookup (head s) ts >>= (\t -> getFromTree t (tail s)))
             <|> (mx >>= (\x->Just (x,s)))
 
 
 -- The remainder of a piece of text.
 type Remainder = (String,SourcePos)
-            
+
+-- get a single token in a form suitable for tokengetters
 getq :: TokenType -> (String -> (String,String)) -> (Remainder -> ([Token],Remainder))
-getq typ f (ss,p) = ([(t,typ,p)] , 
-                 (rest, incSourceLine (if n==0 then incSourceColumn p c else setSourceColumn p (c+1)) n ))
+getq typ f (ss,p) = ([(t,typ,p)] ,(rest, incSourceColumn p c))
         where
-            (t,rest) = f ss 
-            n = length $ elemIndices '\n' t
-            c = length $ takeWhile (/='\n') $ reverse t
+            (t,rest) = f ss
+            c = length t
 
 -- A list of functions to be applied in order and detect the next token in a stream
 type Tgtrs = [(String -> Bool, Remainder -> ([Token],Remainder))]
 
 tokengetters :: Tree -> [(String -> Bool, Remainder -> ([Token],Remainder))]
 tokengetters t = [
-            ((== '\n').head, getq NewLine $ \ss -> ("\n",tail ss)),
+            ((== '\n').head, getNL.first tail),
             (isSpace.head, \(ss,p) -> ([],(tail ss,incSourceColumn p 1))),
-            (isJust.(getFromTree t), getq Operator (fromJust.(getFromTree t))),
-            (isDigit.head, getq Number (break (not.isDigit))),
-            (isAlpha.head, getq Identifier (break (\x->not (isAlphaNum x || x=='_'))))
+            (isJust . getFromTree t, getq Operator (fromJust . getFromTree t)),
+            (isDigit.head, getq Number (span isDigit)),
+            (isAlpha.head, getq Identifier (span (\x->isAlphaNum x || x=='_')) )
             ]
+            where getNL (ss,p) = (if ss=="" || isSpace (head ss) || head ss == '#'
+                   then []
+                   else [("\n",NewLine,p)]
+                   ,( ss, incSourceLine (setSourceColumn p 0) 1))
 
 
 tokeniseFromOps :: [String] -> String -> Either ParseError [Token]
-tokeniseFromOps ops' s = (tokeniseFromGetters $ tokengetters $ makeTree ops')  (s,initialPos "source")
+tokeniseFromOps ops' = tokeniseFromFile ops' "source"
 
 
 tokeniseFromFile :: [String] -> String -> String -> Either ParseError [Token]
-tokeniseFromFile ops' fname s = (tokeniseFromGetters $ tokengetters $ makeTree ops')  (s,initialPos fname)
+tokeniseFromFile ops' fname s = let (kwds,ops) = partition (all isAlpha) ops' in
+    map (\(i,t,p)-> (i,(if i `elem` kwds then Operator else t),p)) <$>
+      (tokeniseFromGetters $ tokengetters $ makeTree ops)  (s,initialPos fname)
 
 
 tokeniseFromGetters :: Tgtrs -> Remainder -> Either ParseError [Token]
@@ -83,6 +92,5 @@ tokeniseFromGetters gs ("",_) = Right []
 tokeniseFromGetters gs ('#':s,f) = tokeniseFromGetters gs (dropWhile (/= '\n') s,f)
 tokeniseFromGetters gs s = case find (\(x,_) -> x $ fst s) gs of
             Nothing -> Left (newErrorMessage (Message "error in tokeniser ") (snd s))
-            Just (_,f) -> let (a,rest)=(f s) in (tokeniseFromGetters gs rest >>= Right . (a++))
-            
-        
+            Just (_,f) -> let (a,rest) = f s in (
+                            tokeniseFromGetters gs rest >>= Right . (a++))
