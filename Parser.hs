@@ -93,8 +93,13 @@ variable = testTok (\ (_,t,_) ->t==Identifier) >>= return.Variable
 logicalConstant ::MyParser Term
 logicalConstant = testTok (\ (s,t,_) -> (t==Operator) && (s`elem`logicalConstants)) >>= return.Constant
 
+int :: MyParser Sort
+int = (tok "int" <|> tok "Int") >> return Int
+bool:: MyParser Sort
+bool = (tok "bool" <|> tok "Bool") >> return Bool
+
 sort :: MyParser Sort
-sort = chainr1 ((tok "int" >> return Int) <|> (tok "bool" >> return Bool) <|> parens sort)
+sort = chainr1 (int <|> bool <|> parens sort)
                 (tok "->" >> return Arrow)
 
 vlist :: MyParser [Term]
@@ -102,14 +107,14 @@ vlist = chainl1 (variable >>= return.return) (tok "," >> return (++))
 
 monotype :: MyParser MonoType
 monotype = chainr1 (
-           (do tok "bool"
+           (do _ <- bool
                tok "["
                g <- formula
                tok "]"
                return $ BoolT g) <|>
            (do (Variable x)<-variable
                tok ":"
-               tok "int"
+               _ <- int
                tok "->"
                ty <- monotype
                return $ ArrowT x IntT ty)<|>
