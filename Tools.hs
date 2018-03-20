@@ -4,7 +4,7 @@
 Some functions that are used across the program
 -}
 
-module Tools((%),errorPart,fromRight,xor)
+module Tools((%),errorPart,fromRight,xor,throwError)
     where
 import Control.Monad.Except
 

@@ -166,8 +166,7 @@ quantified = (try (do q <- oneOf logicalQuantifiers
 
 
 formula :: MyParser Term
-formula = quantified
-      <|> opPrecl (map return logicalBinary) negation
+formula = opPrecl (map return logicalBinary) (quantified <|> negation)
       <?> "formula"
 
 lineParser :: MyParser [Term]
