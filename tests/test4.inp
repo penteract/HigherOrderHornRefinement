@@ -1,0 +1,10 @@
+environment
+f : int -> bool ;
+
+program
+∃ p : (y:int->bool[y>0]). p x ⇒ f x
+∃ p : (y:int->bool[y>0]). p x ⇒ f x
+E f : (int->int). f y = y ^ f y = y+1 ⇒ f y ;
+
+goal
+E n:int. n<=1 ^ f n

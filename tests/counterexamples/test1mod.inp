@@ -1,0 +1,21 @@
+environment
+add  : int->int->int->bool
+iter :(int->int->int->bool)->int->int->bool
+other: bool
+sub  : int->int->int->bool
+
+program
+z = x + y
+   ⇒ add x y z
+z = x - y
+   ⇒ sub x y z
+n ≤ 0 ∧ r = 0
+   ⇒ iter f n r
+( ∃ p : int. n > 0 ∧
+             iter f (n − 1 ) p ∧
+             f n p r )
+   ⇒ iter f n r
+(E a,b:int. iter sub a b) ⇒ other
+
+goal
+E n,r:int. iter add n r ^ n > r

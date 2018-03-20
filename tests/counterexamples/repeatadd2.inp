@@ -1,0 +1,12 @@
+environment
+f : int->int->(int->int->bool)->int->bool
+add : int->int->int->bool;
+
+program
+r=x+y => add x y r
+k<=0 ^ x=r => f x k g r
+k > 0 ^ (E y,z:int. g x y ^ z=k-1 ^ f y z g r) => f x k g r;
+
+goal
+∃ n,k,r,z:int. z=0 ^ (f z n (add k) r) ^ r < n ^ n>0 ^ k > 0
+#∃ n,k,a,b:int. (f (add n) 0 k a) ^ f (add k) 0 n b ^ (b < a \/ a<b)
