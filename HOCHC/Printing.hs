@@ -17,8 +17,8 @@ base (Apply a b) = base a
 base (Variable x) = x
 base other = error ("Printing.hs, base: \n" ++ show other)
 
-smtPrint :: (DeltaEnv,Gamma,Term,Term,Bool) -> String
-smtPrint (d,g,t,gt,s) = legiblise (unlines [
+smtPrint :: ((DeltaEnv,Gamma,Term,Term),Bool) -> String
+smtPrint ((d,g,t,gt),s) = legiblise (unlines [
     "(echo \"a result of unsat means that there is a model for the program clauses in which the goal clause does not hold\")",
     unlines $ map smtDecFun (d++[("goal_",Bool)]),
     smtTerm' (t `aand` aimplies gt (Variable "goal_")),
@@ -80,8 +80,8 @@ pprint = putStrLn.printLong.simp.stripQuantifiers
 
 
 
-smtPrint2:: (DeltaEnv,Gamma,Term,Term,Bool) -> String
-smtPrint2 (d,g,t,gt,s) = legiblise (unlines [
+smtPrint2:: ((DeltaEnv,Gamma,Term,Term),Bool) -> String
+smtPrint2 ((d,g,t,gt),s) = legiblise (unlines [
     "(set-logic HORN)",
     unlines $ map smtDecFun2 d,
     smtTerm2' (pullOutAllQuantifiers True t),

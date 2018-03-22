@@ -28,7 +28,8 @@ library
       HOCHC.Simplify,
       HOCHC.Tokeniser,
       HOCHC.Utils,
-      HOCHC.Transform
+      HOCHC.Transform,
+      HOCHC.ExecLib
   other-extensions:    FlexibleContexts
   build-depends:       base >=4.8 && <5.0, mtl >=2.2 && <2.3,
         parsec >=3.1 && <3.2, containers
