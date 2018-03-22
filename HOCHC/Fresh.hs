@@ -4,25 +4,30 @@ Implements the judgement freshTy given in Chapter 5.
 Also defines the monad Mfresh in which these judgements can be expressed
 -}
 
-module Fresh(freshVar,freshRel,freshTy,freshEnv,
-    Mfresh, lift,runStateT)
+module HOCHC.Fresh(freshVar, freshVarx,freshRel,freshTy,freshEnv,
+    Mfresh, lift, runStateT, runFresh)
     where
 
 
-import DataTypes
+import HOCHC.DataTypes
 import Control.Monad (liftM, ap)
 import Control.Applicative
 
 import Control.Monad.State
 import Control.Monad.Except
 
-    
+
 type Mfresh = StateT Int (Either String)
 
 freshVar :: Mfresh Variable
 freshVar = state (\n->("x_"++show n,n+1))
 
-    
+freshVarx :: Variable -> Mfresh Variable
+freshVarx x = state (\n->(x++"_"++show n,n+1))
+
+runFresh :: Monad m => StateT Int m a -> m a
+runFresh = flip evalStateT 0
+
 freshRel :: DeltaEnv -> Sort -> Mfresh (Term,(Variable,Sort))
 freshRel d rho = do
     x<-freshVar
@@ -43,7 +48,7 @@ freshTy d (Arrow s1 s2) = do
     (ty1,d1) <- freshTy d s1
     (ty2,d2) <- freshTy d s2
     return (ArrowT "_" ty1 ty2,d2++d1)
-    
+
 
 freshEnv :: DeltaEnv -> Mfresh (Gamma,DeltaEnv)
 freshEnv delta = do

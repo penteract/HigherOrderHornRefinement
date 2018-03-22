@@ -6,10 +6,12 @@ Includes functions needed to make instances of Show, as well as
 common definitions used to construct and manipulate formulas.
 -}
 
-module DataTypes where
+module HOCHC.DataTypes where
 
 import Data.Maybe(fromJust,fromMaybe)
 import Data.List
+import Data.Char(toLower)
+import Control.Applicative(liftA2)
 
 --Datatype definitions
 ---------------
@@ -26,6 +28,8 @@ type Constant = String
 data Term = Variable Variable
           | Constant Constant
           | Apply Term Term
+          | If Term Term Term -- condition, then, else
+          --those below are not currently supported as input
           | Lambda Variable Sort Term
           | ExistsT Variable MonoType Term --Type guards (Section 4.3)
           deriving (Eq)
@@ -33,6 +37,7 @@ data Term = Variable Variable
 instance Show Term where
     show = prnt
 
+type Definition = (Variable, [Variable], Term)
 
 --Note that a monotype is simply called a type in the report
 data MonoType = ArrowT Variable MonoType MonoType
@@ -40,7 +45,7 @@ data MonoType = ArrowT Variable MonoType MonoType
     deriving (Eq)
 
 instance Show MonoType where
-    show t = prnty t
+    show = prnty
 
 type DeltaEnv = [(Variable,Sort)] --sort environment
 type Gamma = [(Variable,MonoType)] --type environment
@@ -98,28 +103,39 @@ freeVarsOfTy' xs (ArrowT x t1 t2) = union x1s x2s
 ---------------
 logicalConstants = ["true","false"]
 
+--assignmentOp = ":="
+
 logicalUnary = ["¬"]
 logicalBinary = ["⇒","∨","∧","⇔"]
-logicalQuantifiers = ["∀","∃","λ"]
-logicalSymbols = logicalUnary ++ logicalBinary ++ logicalQuantifiers ++ logicalConstants
+quantifiers = ["λ"]
+logicalQuantifiers = ["∃","∀"]
+logicalSymbols = logicalUnary ++ logicalBinary ++ logicalConstants ++ logicalQuantifiers
+constants = "assert":logicalConstants
 
 ilaOps = ["+","-"]
 ilaRels = [">=","<=",">","<", "=", "≠"]
 binaryOps = ilaOps++ilaRels++logicalBinary
 
 isIlaSymbol :: String -> Bool
-isIlaSymbol s = s `elem` (ilaOps++ilaRels++logicalConstants) || all (`elem` ['0'..'9']) s
+isIlaSymbol = liftA2 (||) (`elem` (ilaOps++ilaRels++logicalConstants)) isIntegerConstant
 
+isIntegerConstant :: String -> Bool
+isIntegerConstant = all (`elem` ['0'..'9'])
+
+--is the symbol a non relational ILA symbol
+isIlaFn :: String -> Bool
+isIlaFn = liftA2 (||) (`elem` (ilaOps)) isIntegerConstant
 
 baseEnv = zip logicalBinary (repeat (Arrow Bool . Arrow Bool $ Bool)) ++
           zip logicalUnary (repeat (Arrow Bool Bool)) ++
           zip logicalConstants (repeat Bool)
 
-ilaEnv :: DeltaEnv
+ilaEnv :: [(Constant,Sort)] --DeltaEnv
 ilaEnv = zip ilaOps (repeat (Arrow Int . Arrow Int $ Int)) ++
          zip ilaRels (repeat (Arrow Int . Arrow Int $ Bool)) ++
          baseEnv
 
+mainEnv = [("assert", Arrow Bool Bool)] ++ ilaEnv
 
 --printing functions
 ---------------
@@ -136,15 +152,18 @@ prints (Arrow a b) = '(' : prints a++ "->" ++ prints b ++ ")"
 prints x = prns x
 
 
---prints nicely
-prns :: Sort -> String
-prns = prns' False
+--somewhat inefficient
+prns = map toLower . prnS
 
-prns' :: Bool -> Sort -> String
-prns' _ Int = "Int"
-prns' _ Bool = "Bool"
-prns' True x = parise $ prns' False x
-prns' False (Arrow a b) = prns' True a++"->"++prns' False b
+--prints nicely
+prnS :: Sort -> String
+prnS = prnS' False
+
+prnS' :: Bool -> Sort -> String
+prnS' _ Int = "Int"
+prnS' _ Bool = "Bool"
+prnS' True x = parise $ prnS' False x
+prnS' False (Arrow a b) = prnS' True a++"->"++prnS' False b
 
 prnt :: Term -> String
 prnt t = prnt' 0 0 t
@@ -173,6 +192,10 @@ prnt' lp rp (Constant c)  = c
 prnt' lp rp (Apply a b)  = if maxPrec<=lp
                               then parise (prnt' 0 maxPrec a ++ " " ++prnt' maxPrec 0 b)
                               else  prnt' lp maxPrec a ++ " " ++prnt' maxPrec rp b
+prnt' lp rp (If cond thn els) = (if rp==0 then id else parise) $
+                                   "if "++prnt' 0 0 cond
+                                 ++" then "++prnt' 0 0 thn
+                                 ++" else "++prnt' 0 0 els
 
 
 prnty :: MonoType -> String
@@ -192,9 +215,18 @@ getprec' n (ops:rest) = map (flip (,) n) ops ++ getprec' (n+1) rest
 getprec2 = foldl (++) [] (map (uncurry $ map. flip (,)) (zip [1..] opsByPrec))
 maxPrec = length opsByPrec + 1
 
+--apply a (typically recursive) function  uniformly across unchecked cases
+appdown :: (Term -> Term) -> Term -> Term
+appdown f (Lambda v s t) = (Lambda v s (f t))
+appdown f (Apply a b) = Apply (f a) (f b)
+appdown f (ExistsT v ty t) = (ExistsT v ty (f t))
+appdown f (If c t1 t2) = If (f c) (f t1) (f t2)
+appdown f t = t --Variable or Constant
+
 -- Helpful constructors (apply 'and', apply 'or', etc)
 aand t1 t2 = (Apply (Apply (Constant "∧") t1) t2)
 aor t1 t2 = (Apply (Apply (Constant "∨") t1) t2)
 aforall x s t = (Apply (Constant "∀") (Lambda x s t))
 aimplies t1 t2 = (Apply (Apply (Constant "⇒") t1) t2)
+aequals t1 t2 = (Apply (Apply (Constant "=") t1) t2)
 aexists x s t = (Apply (Constant "∃") (Lambda x s t))

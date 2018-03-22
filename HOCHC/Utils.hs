@@ -4,7 +4,7 @@
 Some functions that are used across the program
 -}
 
-module Tools((%),errorPart,fromRight,xor,throwError)
+module HOCHC.Utils((%),errorPart,fromRight,xor,(>><),check,(?),throwError)
     where
 import Control.Monad.Except
 
@@ -20,12 +20,19 @@ import Control.Monad.Except
 errorPart :: MonadError String m => String -> m a -> m a
 errorPart s = (`catchError` (\ e ->throwError ("{} Error:\n{}" % [s,e])))
 
-check :: Bool -> String -> Either String ()
-check cond err = if cond then Right () else Left err
+
+(?) :: MonadError e m => Maybe a -> e -> m a
+(?) = flip$ (`maybe` return) .throwError
+--(?) m e = maybe (throwError e) return m
+
+check :: MonadError String m => Bool -> String -> m ()
+check cond err = if cond then return () else throwError err
 
 fromRight :: Either a b -> b
 fromRight (Right x) = x
 
+(>><) :: Monad m => m a -> (a-> m b) -> m a
+xm >>< f = xm >>= (\x -> f x >> return x)
 
 xor True x = not x
 xor False x = x

@@ -1,5 +1,5 @@
-false \/ x_5 > 0 => x_2 x_5
+x_5 > 0 => x_2 x_5
 
 goal:
-E x_6:Int.x_6 <= 1 ^ x_2 x_6
+E x_6:int.x_6 <= 1 ^ x_2 x_6
 

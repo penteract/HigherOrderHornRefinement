@@ -3,13 +3,14 @@ Functions for transforming a higher-order constrained Horn clause problem into a
 See Section 3.2.
 -}
 
-module Transform(transformProg,vlist,slist,split,occursIn, elim)
+module HOCHC.Transform(transformProg,vlist,slist,split,occursIn, elim)
     where
 
-import Fresh(Mfresh,freshVar)
-import DataTypes
-import Tools
-import FormulaChecks(checkSort)
+import HOCHC.Fresh(Mfresh,freshVar)
+import HOCHC.DataTypes
+import HOCHC.Utils
+import HOCHC.FormulaChecks(checkSort)
+
 import Data.Maybe(fromJust)
 import Control.Monad(liftM,liftM2)
 import Control.Monad.Except(throwError,lift)

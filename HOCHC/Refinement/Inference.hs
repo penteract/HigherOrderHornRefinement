@@ -5,9 +5,9 @@ This is an implementation of the 'algorithm from inference rules' described in c
 module Inference
     where
 
-import DataTypes
-import Parser
-import Fresh
+import HOCHC.DataTypes
+import HOCHC.Parser
+import HOCHC.Fresh
 
 import Data.List(lookup)
 import Data.Maybe(fromJust,fromMaybe)
@@ -16,7 +16,7 @@ import Data.Char(isDigit)
 import Control.Applicative
 import Control.Monad.Except(throwError)
 
-import Tools
+import HOCHC.Utils
 
 (↦) = (,)
 

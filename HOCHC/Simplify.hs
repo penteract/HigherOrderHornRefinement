@@ -3,13 +3,14 @@ This module contains a number of operations for reducing the output
 e.g. turning 'x ^ true' into 'x'
 -}
 
-module Simplify(pullOutAllQuantifiers,stripQuantifiers,simp,proc)
+module HOCHC.Simplify(pullOutAllQuantifiers,stripQuantifiers,simp,proc)
     where
 
-import DataTypes
-import Transform(vlist,occursIn)
+import HOCHC.DataTypes
+import HOCHC.Transform(vlist,occursIn)
+import HOCHC.Utils
+
 import Data.List
-import Tools
 
 
 --Strip outermost universal quantifiers from a conjugation of terms
@@ -40,13 +41,20 @@ stripQuantifiers (Apply (Apply (Constant "∧") t1) t2) =
 stripQuantifiers (Apply (Constant "∀") (Lambda x s t)) = stripQuantifiers t
 stripQuantifiers x = x
 
+--how do I shorten this?
 simplify :: Term -> Term
 simplify (Apply (Apply (Constant "∧") (Constant "true")) t) = simplify t
 simplify (Apply (Apply (Constant "∧") t) (Constant "true")) = simplify t
+simplify (Apply (Apply (Constant "∧") (Constant "false")) t) = Constant "false"
+simplify (Apply (Apply (Constant "∧") t) (Constant "false")) = Constant "false"
+simplify (Apply (Apply (Constant "∨") (Constant "false")) t) = simplify t
+simplify (Apply (Apply (Constant "∨") t) (Constant "false")) = simplify t
+simplify (Apply (Apply (Constant "∨") (Constant "true")) t) = Constant "true"
+simplify (Apply (Apply (Constant "∨") t) (Constant "true")) = Constant "true"
 simplify (Apply (Constant "∀") (Lambda x s (Constant "true"))) = (Constant "true")
-simplify (Apply t1 t2) = Apply (simplify t1) (simplify t2)
-simplify (Lambda x s t) = Lambda x s (simplify t)
-simplify t = t
+simplify t = appdown simplify t
+--simplify (Apply t1 t2) = Apply (simplify t1) (simplify t2)
+--simplify (Lambda x s t) = Lambda x s (simplify t)
 
 --Apply simplify until it has no further effect
 simp :: Term -> Term
@@ -87,7 +95,7 @@ f vs ks1 ((body,(params,headvar)):ks2) = if headvar `elem` vs || headvar `elem` 
     else f vs (map sub ks1) (map sub ks2)
     where sub = \(x,y) -> (subs (body,(params,headvar)) [] x, y)
 
--- substitute something for an instance 
+-- substitute something for an instance
 subs :: Clause -> [Term] -> Term -> Term
 subs (body,(params,v)) args (Variable x) = if x==v
     then if length args < length params

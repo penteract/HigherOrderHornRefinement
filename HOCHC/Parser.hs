@@ -1,9 +1,9 @@
 {-
 
 -}
-module Parser where
+module HOCHC.Parser where
 
-import Tokeniser
+import HOCHC.Tokeniser
 
 import Text.Parsec.Prim
 import Text.Parsec.Combinator
@@ -12,7 +12,7 @@ import Data.Char
 import Data.Maybe
 import Data.List(sortBy)
 import Data.Ord(comparing)
-import DataTypes
+import HOCHC.DataTypes
 import Control.Applicative((<**>))
 
 sortOn f = map snd . sortBy (comparing fst) . map (\x -> let y = f x in y `seq` (y, x))
@@ -21,18 +21,20 @@ exists = "∃"
 forall = "∀"
 
 --get rid of unicode from output
-legiblise "" _ _ = ""
-legiblise (c:s) [] l = c:legiblise s l l
-legiblise s ((x,y):xs) l = if start == y then x ++ legiblise end l l else legiblise s xs l
+legiblise s l = legiblise' s l l
+
+legiblise' "" _ _ = ""
+legiblise' (c:s) [] l = c:legiblise' s l l
+legiblise' s ((x,y):xs) l = if start == y then x ++ legiblise' end l l else legiblise' s xs l
     where (start,end)= splitAt (length y) s
 
 ll= sortOn (negate.length.snd) [ ("^","∧"), ("=>","⇒"), ("\\","λ"),("A ","∀"),("E ","∃"), ("\\/","∨"),("<=>","⇔"), ("/=","≠")]
 
 ununicode :: String -> String
-ununicode s= legiblise s ll ll
+ununicode s= legiblise s ll
 
 cannonicals :: [(String,String)]
-cannonicals = ll ++[("≤","<="),("≥",">="),("−","-"),("→","->")]
+cannonicals = ll ++[("≤","<="),("≥",">="),("−","-"),("→","->"),("==","="),("!=","≠")]
 
 --Parser
 ---------------
@@ -41,9 +43,17 @@ cannonicals = ll ++[("≤","<="),("≥",">="),("−","-"),("→","->")]
 
 typeSymbols = ["->"]
 
+
+
+keywords = ["if", "then", "else"] --"let","in" to be added
+
+--symbols :: [String]
+--symbols = (logicalSymbols ++ ilaOps ++ ilaRels -- ++ typeSymbols
+--    ++ ["(",")",".",":="] ++ keywords ++ quantifiers) `union` constants
+
 symbols :: [String]
 symbols = logicalSymbols ++ ilaOps ++ ilaRels++ typeSymbols
-    ++ ["(",")",":",".",",",";","[","]"] ++ ["program","goal","environment"]
+    ++ ["(",")",":",".",",",";","[","]",":="] ++ keywords
     -- ++ ["environment","program","goal"]
 
 cannonise :: Token -> Token
@@ -70,7 +80,7 @@ oneOf [] = fail "not in set"
 oneOf (s:ss) = tok s <|> oneOf ss
 
 
--- parse a sequence of left assoc binary operators in order of precedence (where some share precedence)
+-- parse a sequence of left assoc binary operators in order of precedence (where some may share precedence)
 opPrecl :: [[String]] -> MyParser Term -> MyParser Term
 opPrecl [] p = p
 opPrecl (ss:rest) p = chainl1 (opPrecl rest p)
@@ -85,13 +95,14 @@ parens p = do tok "("
               return t
 
 number :: MyParser Term
-number = testTok (\ (_,t,_) ->t==Number) >>= return.Constant
+number = Constant <$> testTok (\ (_,t,_) ->t==Number)
+
+
+identifier :: MyParser Variable
+identifier = testTok (\ (_,t,_) ->t==Identifier)
 
 variable :: MyParser Term
-variable = testTok (\ (_,t,_) ->t==Identifier) >>= return.Variable
-
-logicalConstant ::MyParser Term
-logicalConstant = testTok (\ (s,t,_) -> (t==Operator) && (s`elem`logicalConstants)) >>= return.Constant
+variable = Variable <$> identifier
 
 int :: MyParser Sort
 int = (tok "int" <|> tok "Int") >> return Int
@@ -122,12 +133,28 @@ monotype = chainr1 (
            (tok "->" >> return (ArrowT "_"))
 
 
+conditional :: MyParser Term
+conditional = do
+   tok "if"
+   cond <- formula
+   tok "then"
+   thenpart <- formula
+   (do tok "else"
+       elsepart <- formula
+       return (If cond thenpart elsepart)
+    <|>return (If cond thenpart (Constant "true"))) -- should only matter for assertions
+
+
+constant ::MyParser Term
+constant = Constant <$> testTok (\ (s,t,_) -> (t==Operator) && (s`elem`constants))
+
 
 simpleTerm :: MyParser Term
 simpleTerm = parens formula
-         <|> logicalConstant
-         <|> number
-         <|> variable
+        <|> conditional
+        <|> constant
+        <|> number
+        <|> variable
 
 simpleFormula :: MyParser Term
 simpleFormula = (many1 simpleTerm >>= return . foldl1 Apply)
@@ -148,7 +175,7 @@ fromtvlist _ [] body = body
 fromtvlist q ((s,Variable v):tvs) body = (if q=="λ" then id else Apply (Constant q))
                     (Lambda v s (fromtvlist q tvs body))
 
-negation = (tok "¬" >> (quantified <|> negation) >>= return.(Apply (Constant "¬")))
+negation = Apply (Constant "¬") <$> (tok "¬" >> (quantified <|> negation))
        <|> opPrecl [ilaRels,ilaOps] simpleFormula
 
 
@@ -168,48 +195,3 @@ quantified = (try (do q <- oneOf logicalQuantifiers
 formula :: MyParser Term
 formula = opPrecl (map return logicalBinary) (quantified <|> negation)
       <?> "formula"
-
-lineParser :: MyParser [Term]
-lineParser = (formula >>= return.return)
-         <|> parserReturn []
-
-parser :: MyParser [Term]
-parser = do res <- chainl lineParser (tok "\n" >> return (++)) []
-            eof
-            return res
-
-
-
-environmentLine :: MyParser DeltaEnv
-environmentLine = (do
-      (Variable v) <- variable
-      tok ":"
-      s<-sort
-      return [(v,s)])
-    <|> return []
-
-separator = (tok ";" >> tok "\n") <|> tok "\n" <|> return ""
-
-file :: MyParser (DeltaEnv,[Term],Term)
-file = do
-    tok "environment" >> tok "\n"
-    d <- chainl1 environmentLine (tok "\n">>return (++))
-    separator >> tok "program" >> tok "\n"
-    prog <- chainl1 lineParser (tok "\n" >> return (++))
-    separator >> tok "goal" >> tok "\n"
-    goal <- formula
-    eof <|> (tok ";" >> eof)
-    return (d,prog,goal)
-
-
-parseFile :: String -> String -> Either String (DeltaEnv,[Term],Term)
-parseFile fname contents = fromParse (do
-    ts <- tokeniseFromFile (symbols ++ map fst cannonicals) fname contents
-    let body = map cannonise ts
-    runParser file () fname body)
-
-fromParse (Left x) = Left $ show x
-fromParse (Right x) =  Right x
-
---for testing
-qp =  (>>= (runParser formula () "" . map cannonise)) . tokeniseFromOps  (symbols ++ map fst cannonicals)

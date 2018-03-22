@@ -6,7 +6,7 @@ Newlines followed by whitespace are ignored
 Comments begin with #, the remainder of the line is ignored
 -}
 
-module Tokeniser(
+module HOCHC.Tokeniser(
     tokeniseFromOps,tokeniseFromFile,
     Token,
     TokenType(Operator, Identifier, Number, NewLine)
