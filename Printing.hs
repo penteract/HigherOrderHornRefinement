@@ -43,6 +43,7 @@ deand t = [t]
 
 smtTerm :: Term -> String
 smtTerm (Apply (Apply (Constant c) t1) t2)
+    | c == "≠" = "(not (= {} {}))"%[smtTerm t1, smtTerm t2]
     | c `elem` binaryOps = "({} {} {})"%[c, smtTerm t1, smtTerm t2]
 smtTerm (Apply (Constant c) t)
     | c `elem` logicalUnary = "({} {})"%[c, smtTerm t]

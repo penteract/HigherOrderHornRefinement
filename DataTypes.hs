@@ -20,7 +20,7 @@ data Sort = Arrow Sort Sort
 instance Show Sort where
     show = prns
 
-    
+
 type Variable = String
 type Constant = String
 data Term = Variable Variable
@@ -35,8 +35,8 @@ instance Show Term where
 
 
 --Note that a monotype is simply called a type in the report
-data MonoType = ArrowT Variable MonoType MonoType 
-          | IntT | BoolT Term 
+data MonoType = ArrowT Variable MonoType MonoType
+          | IntT | BoolT Term
     deriving (Eq)
 
 instance Show MonoType where
@@ -104,7 +104,7 @@ logicalQuantifiers = ["∀","∃","λ"]
 logicalSymbols = logicalUnary ++ logicalBinary ++ logicalQuantifiers ++ logicalConstants
 
 ilaOps = ["+","-"]
-ilaRels = [">=","<=",">","<", "="]
+ilaRels = [">=","<=",">","<", "=", "≠"]
 binaryOps = ilaOps++ilaRels++logicalBinary
 
 isIlaSymbol :: String -> Bool
@@ -129,7 +129,7 @@ printt :: Term -> String
 printt (Variable v) = v
 printt (Constant c) = c
 printt (Apply t1 t2) = '(' : printt t1 ++" "++ printt t2 ++ ")"
-printt (Lambda v s t) = 'λ' :  v++":"++prints s++"."++ printt t 
+printt (Lambda v s t) = 'λ' :  v++":"++prints s++"."++ printt t
 
 prints :: Sort -> String
 prints (Arrow a b) = '(' : prints a++ "->" ++ prints b ++ ")"

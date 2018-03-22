@@ -91,6 +91,6 @@ tokeniseFromGetters :: Tgtrs -> Remainder -> Either ParseError [Token]
 tokeniseFromGetters gs ("",_) = Right []
 tokeniseFromGetters gs ('#':s,f) = tokeniseFromGetters gs (dropWhile (/= '\n') s,f)
 tokeniseFromGetters gs s = case find (\(x,_) -> x $ fst s) gs of
-            Nothing -> Left (newErrorMessage (Message "error in tokeniser ") (snd s))
+            Nothing -> Left (newErrorMessage (Message ("error in tokeniser: "++take 10 (fst s))) (snd s))
             Just (_,f) -> let (a,rest) = f s in (
                             tokeniseFromGetters gs rest >>= Right . (a++))
