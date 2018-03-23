@@ -9,7 +9,7 @@ import HCParser(parseFile)
 import HOCHC.Parser(ununicode)
 import HOCHC.Transform
 import HOCHC.FormulaChecks
-import Inference(inferProg,infer)
+import HOCHC.Inference(inferProg,infer)
 import HOCHC.DataTypes
 
 import HOCHC.ExecLib

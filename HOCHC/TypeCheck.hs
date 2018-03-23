@@ -1,7 +1,7 @@
 {-
 This should do type inference, type checking and check that variables are bound
 -}
-module TypeCheck(typeCheck)
+module HOCHC.TypeCheck(typeCheck)
     where
 
 import HOCHC.DataTypes

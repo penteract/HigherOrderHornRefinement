@@ -2,7 +2,7 @@
 This is an implementation of the 'algorithm from inference rules' described in chapter 5.
 -}
 
-module Inference
+module HOCHC.Inference
     where
 
 import HOCHC.DataTypes

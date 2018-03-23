@@ -3,7 +3,7 @@ Functions for transforming a higher-order constrained Horn clause problem into a
 See Section 3.2.
 -}
 
-module Translate(transformLine,transform,rhoify)
+module HOCHC.Translate(transformLine,transform,rhoify)
     where
 
 import HOCHC.Fresh(Mfresh)

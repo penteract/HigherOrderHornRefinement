@@ -16,9 +16,9 @@ import HOCHC.ExecLib
 import HOCHC.Fresh(runFresh)
 import HOCHC.Parser(ununicode)
 import HOCHC.Simplify
+import HOCHC.Translate
+import HOCHC.TypeCheck
 import ProgParser(parseFile)
-import Translate
-import TypeCheck
 --import Utils
 import HOCHC.Printing
 

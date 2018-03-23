@@ -15,10 +15,10 @@ do
     cat $f >> $OUTFILE
     echo >> $OUTFILE
     echo "   After Transformation" >> $OUTFILE
-    HigherOrderHornRefinement -r $f >> $OUTFILE
+    horus -r $f >> $OUTFILE
     echo >> $OUTFILE
     echo "   Z3 result" >> $OUTFILE
-    HigherOrderHornRefinement -rzs $f | z3 -smt2 -in >> $OUTFILE
+    horus -rzs $f | z3 -smt2 -in >> $OUTFILE
     echo ---------------- >> $OUTFILE
     echo >> $OUTFILE
 done

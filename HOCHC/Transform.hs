@@ -3,7 +3,7 @@ Functions for transforming a higher-order constrained Horn clause problem into a
 See Section 3.2.
 -}
 
-module HOCHC.Transform(transformProg,vlist,slist,split,occursIn, elim)
+module HOCHC.Transform(transformProg,vlist,slist,split,occursIn, elim,split')
     where
 
 import HOCHC.Fresh(Mfresh,freshVar)

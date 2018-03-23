@@ -10,7 +10,7 @@ import HOCHC.DataTypes
 import HOCHC.Simplify
 import HOCHC.Parser(legiblise)
 import HOCHC.Utils
-import HOCHC.Transform(vlist,slist,occursIn)
+import HOCHC.Transform(vlist,slist,occursIn,split')
 
 base :: Term -> Variable
 base (Apply a b) = base a
@@ -125,10 +125,6 @@ printEnv :: DeltaEnv -> String
 printEnv [] = ""
 printEnv (("main",_):d) = printEnv d
 printEnv ((v,s):d) = v++" : "++prns s++"\n"++ printEnv d
-
-split' ::Term -> Either String (Term,([String],String))
-split' (Apply (Apply (Constant "⇒") a) b) = (,) a <$> vlist b
-split' t = Left ("not in Horn clause format\n"++show t)
 
 removeNeq :: Term -> Term
 removeNeq (Apply (Apply (Constant "≠") a) b) = let app2 c = (Apply (Apply (Constant c) a) b) in

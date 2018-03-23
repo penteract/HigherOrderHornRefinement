@@ -7,15 +7,13 @@ A Haskell implementation of the algorithm described in "Higher-Order Constrained
 The project can be built with the tools cabal or stack:
 
 `stack install`
-(this will create the executable `HigherOrderHornRefinement` on `PATH`)
+(this will create the executables `horus` and `thoth` on `PATH`)
 
 or
 ```
 cabal configure
 cabal install --bindir=.
 ```
-
-As a third alternative, install the packages *parsec* and *mtl*, then run `ghc Main -o HigherOrderHornRefinement`.
 
 Z3, which can be obtained from https://github.com/Z3Prover/z3/releases is needed for some test cases.
 
