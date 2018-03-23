@@ -1,4 +1,4 @@
-module HOCHC.ExecLib(Opt(..),mkMain,defaultOpts,baseoptions,mkUsage) where
+module HOCHC.ExecLib(Opt(..),mkMain,defaultOpts,baseoptions,mkUsage,applyOpts') where
 
 import System.Environment
 import System.IO
@@ -17,30 +17,29 @@ import HOCHC.Simplify
 import HOCHC.Utils
 import HOCHC.Printing
 
-data Opt t = Opt
+data Opt t d = Opt
     { optHelp         :: Bool
     , optHandleIn     :: IO Handle -> IO Handle
     , optHandleOut    :: ((Handle -> IO ()) -> IO ()) -> (Handle -> IO ()) -> IO ()
     , optTermOut      :: t -> t
-    , optTermPrint    :: PrintType t
+    , optTermPrint    :: (t,d)-> Either String String
     , optStringOut    :: String -> String
-    , optSuppress     :: Bool
+    , optOther        :: d
     }
 
-type PrintType t = (t,Bool) -> String
 
-defaultOpts :: PrintType t -> Opt t
-defaultOpts pr = Opt
+defaultOpts :: ((t,d)-> Either String String) -> d -> Opt t d
+defaultOpts pr other = Opt
     { optHelp         = False
     , optHandleIn     = makeInpUTF
     , optHandleOut    = makeOutUTF
     , optTermOut      = id
     , optTermPrint    = pr
     , optStringOut    = ununicode
-    , optSuppress      = False
+    , optOther        = other
     }
 
-baseoptions :: [OptDescr (Opt t -> Opt t)]
+baseoptions :: [OptDescr (Opt t d -> Opt t d)]
 baseoptions =
     [ Option ['h'] ["help"]
         (NoArg (\opts -> opts{optHelp=True}))
@@ -48,27 +47,29 @@ baseoptions =
     , Option ['u'] []
         (NoArg (\opts -> opts{optStringOut=id}))
         "output in unicode"
-    , Option ['n'] []
+    {-, Option ['n'] []
         (NoArg (\opts -> opts{
             optHandleIn=id,
             optHandleOut=id}))
-        "don't try to read unicode input"
+        "don't try to read unicode input"-}
     ]
 
 type RunType t = String -> String -> Either String t
 
-applyOpts :: RunType t -> Opt t -> String -> IO Handle -> ((Handle -> IO ()) -> IO ()) -> IO ()
+applyOpts :: RunType t -> Opt t d -> String -> IO Handle -> ((Handle -> IO ()) -> IO ()) -> IO ()
 applyOpts run opt fname inh out = do
     inp <- (optHandleIn opt inh>>=hGetContents)
-    case run fname inp of
-        Right res -> optHandleOut opt out $ flip hPutStrLn
-            $ optStringOut opt $ (\t -> optTermPrint opt (t,optSuppress opt)) $ optTermOut opt $ res
-        Left err  -> hPutStrLn stderr err
+    case run fname inp >>= applyOpts' opt  of
+        Right str -> optHandleOut opt out $ flip hPutStrLn str
+        Left err  -> hPutStrLn stderr (optStringOut opt $ err)
+
+applyOpts' :: Opt t d -> t -> Either String String
+applyOpts' opt res = optStringOut opt <$>  optTermPrint opt (optTermOut opt res,optOther opt)
 
 mkUsage opts fn handle = getProgName >>= hPutStrLn handle . flip usageInfo opts . fn
 
 
-mkMain :: (Handle -> IO ()) -> Opt t -> [OptDescr (Opt t -> Opt t)] -> RunType t -> IO ()
+mkMain :: (Handle -> IO ()) -> Opt t d -> [OptDescr (Opt t d -> Opt t d)] -> RunType t -> IO ()
 mkMain usage def options' run = getArgs >>= (\(o,args,errs) -> case errs of
     (a:b) -> (hPutStrLn stderr (concat errs) >> usage stderr)
     [] -> let opts = foldl (flip ($)) def o in

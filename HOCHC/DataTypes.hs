@@ -183,7 +183,7 @@ prnt' lp rp (Apply (Constant c) t)
                                       else c++prnt' p rp t)
     | c `elem` logicalQuantifiers = case t of
         (Lambda a s body) -> (if rp==0 then id else parise) $
-                                (c++a++":"++prns s++"."++prnt' 0 0 body)
+                                (c++a++":"++prns s++". "++prnt' 0 0 body)
         _ -> error "bad quantifier"
 prnt' lp rp (Lambda a s body)  = (if rp==0 then id else parise) $
                                 ("λ"++a++":"++prns s++"."++prnt' 0 0 body)

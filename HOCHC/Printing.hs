@@ -3,7 +3,8 @@ A module containing additional functions for printing.
 In particular, this includes functions for producing SMT-LIB output that can be processed by Z3
 -}
 
-module HOCHC.Printing(printOut,pprint,printInd,smtPrint,smtPrint2,printEnv,printLog) where
+module HOCHC.Printing(printOut,pprint,printInd,smtPrint,smtPrint2,printEnv,printLog,
+    deand) where
 
 import Data.List
 import HOCHC.DataTypes
