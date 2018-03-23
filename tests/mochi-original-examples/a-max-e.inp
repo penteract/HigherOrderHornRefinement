@@ -8,4 +8,4 @@ i>=n ^ r = m => array_max n i a m r
 i<n ^ (E x : int.a i x ^ (E z:int.((x>m ^ z=x)\/(x<=m ^ z=m)) ^(E w:int. w=i+1 ^ array_max n w a z r))) => array_max n i a m r;
 
 goal
-E n,m,i,x:int.i=0 ^ x=0-1 ^ n>0 ^ array_max n i (make_array n) x m ^ m+1<n
+E n,m,i,x:int.i=0 ^ x=0-1 ^ n>0 ^ array_max n i (make_array n) x m ^ m<n+1
