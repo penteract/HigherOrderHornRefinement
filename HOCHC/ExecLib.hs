@@ -43,10 +43,10 @@ baseoptions :: [OptDescr (Opt t d -> Opt t d)]
 baseoptions =
     [ Option ['h'] ["help"]
         (NoArg (\opts -> opts{optHelp=True}))
-        "show this message"
+        "Show this message"
     , Option ['u'] []
         (NoArg (\opts -> opts{optStringOut=id}))
-        "output in unicode"
+        "Output using unicode characters"
     {-, Option ['n'] []
         (NoArg (\opts -> opts{
             optHandleIn=id,
