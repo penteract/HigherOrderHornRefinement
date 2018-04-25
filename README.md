@@ -18,8 +18,8 @@ cabal install --bindir=.
 Z3, which can be obtained from https://github.com/Z3Prover/z3/releases is needed for some test cases.
 
 ### Run
-`HigherOrderHornRefinement inputFile outputFile` is the easiest way to call the program.
-`HigherOrderHornRefinement -h` gives more information about command line options.
+`horus inputFile outputFile` is the easiest way to call the program.
+`horus -h` gives more information about command line options.
 
 ### Input format
 For an example of a complete input file, see tests/test1.inp.
