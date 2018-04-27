@@ -65,12 +65,12 @@ refinementoptions :: [OptDescr (Opt FOP Bool -> Opt FOP Bool)]
 refinementoptions = [Option ['l'] ["long"]
         (NoArg (\opts -> opts{optTermPrint = \((d,g,t,goalt),s)->Right$ unlines $
             [printInd t,"","goal:",show goalt]}))
-        "print output in a longer format"
+        "Print output in a longer format"
     , Option ['r'] []
         (NoArg (\opts -> opts{optTermOut = (\(d,g,t,gt)->
             let t2 = proc t (foldl1 union (freeVars gt:map (freeVarsOfTy.snd) g)) in
                 (filter ((`occursIn` t2) . fst) d,g,t2,gt)) . optTermOut opts}))
-        "apply the unfold reduction to output"
+        "Apply the unfold reduction to output"
     , Option ['s'] []
         (NoArg (\opts -> opts{optOther = True}))
         "Supress printing models (for use with -x or -z)"
