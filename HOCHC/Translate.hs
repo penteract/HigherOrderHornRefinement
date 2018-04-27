@@ -30,12 +30,15 @@ instance {-# OVERLAPPING #-} Monoid (a -> a) where
     mappend f g = f . g
 
 
+-- Fresh variables, a frozen environment, and a modifier that keeps track of
+-- things to do once we get back to somewhere that knows it has type o
 type Tfresh = ReaderT DeltaEnv (WriterT (Term -> Term) Mfresh)
 
 freshVar = lift$ lift$ Fresh.freshVarx "y"
 
+--given a monadic computation of a term, use the written modifier  then erase it
 extractTerm :: Tfresh Term -> Tfresh Term
-extractTerm = (censor$ const id) . (uncurry (flip id) <$>) . listen
+extractTerm = (censor$ const id) . (uncurry (flip id) <$>) . listen --why do I hate people that read my code? particularly as it's mostly me
 
 transform :: DeltaEnv -> [Definition] -> Mfresh (Term,Term)
 transform env defns =
@@ -80,38 +83,20 @@ getSort (Constant c) =do
 getSort (If c t e) = getSort t --again does not typecheck
 
 
+varSort :: Variable -> Tfresh Sort
+varSort v = do
+     ms <- reader (lookup v)
+     maybe (throwError ("Can't find sort of variable "++v)) return ms
 --transforms a term where the head is a variable into an atom or part of an atom
 -- (for it to be an atom, it would really need integer sort to begin with)
-toAtom':: Term -> Tfresh Term
+{-toAtom':: Term -> Tfresh Term
 toAtom' t = do
     s <- getSort t
-    toAtom s t
-
---toAtom' :: Term -> Tfresh Term
---toAtom Bool _ =
---    throwError "expecting non-relational sort"
-{-
-toAtom t@(Variable v) = do
-    isInt v
-    return t
-toAtom Int t = do --need to be more careful here - whether it really is an int and whether it really needs an int is hard to determine. (assume it always really needs an int)
-    v <- freshVar
-    e <- transformInt t v
-    tell (aexists v Int . aand e)
-    return (Variable v)
-toAtom (Arrow Int Bool) t = do
-    v <- freshVar
-    e <- transformInt t v --real recursion problems
-    tell (aexists v Int . aand e)
-    return (Variable v)
-toAtom (Arrow a b) (Apply s t) = do
-    s' <- toAtom' s
-    t' <- toAtom' t
-    return (Apply s' t')
-toAtom a t  = throwError ("some problem sort:{} term:{}"%[show a,show t])-}
-
+    toAtom s t-}
 
 --note the assumption that constants are applied
+
+--given a term and the expected sort, coerce the sort to match the term, then
 toAtom :: Sort -> Term -> Tfresh Term
 toAtom Bool _ =
     throwError "expecting non-relational sort"
@@ -121,15 +106,20 @@ toAtom Int t = do --need to be more careful here - whether it really is an int a
     e <- transformInt t v
     tell (aexists v Int . aand e)
     return (Variable v)
-toAtom (Arrow Int Bool) t = do
-    v <- freshVar
-    e <- transformInt t v --real recursion problems
-    tell (aexists v Int . aand e)
-    return (Variable v)
-toAtom (Arrow a b) (Apply s t) = do
-    s' <- toAtom' s
-    t' <- toAtom' t
-    return (Apply s' t')
+--toAtom (Arrow Int Bool) t = do
+--    v <- freshVar
+--    e <- transformInt t v --real recursion problems (I think they're gone now)
+--    tell (aexists v Int . aand e)
+--    return (Variable v)
+toAtom ty@(Arrow a b) t= do --(Apply s t) = do
+    let (args,h) = tlist t
+    case h of
+        (Variable f) -> do
+            fsort <- varSort f
+            let (sorts,Bool) = slist fsort
+            args' <- sequence (zipWith toAtom sorts args)
+            return$ foldl Apply h args'
+        _ -> throwError ("unexpected function argument {}; expected type {}"%[show t, show ty])
 toAtom a t  = throwError ("some problem sort:{} term:{}"%[show a,show t])
 
 
@@ -194,9 +184,10 @@ transformInt t@(Apply _ _) v = do
         (Constant _) -> do
             tm <- toTm t
             return$ aequals tm (Variable v)
-        (Variable _) -> do
-            -- could getSort v
-            args' <- mapM toAtom' args
+        (Variable f) -> do
+            fsort <- varSort f
+            let (sorts,Bool) = slist fsort
+            args' <- sequence (zipWith toAtom sorts args)
             return$ Apply (foldl Apply h args' ) (Variable v)
 
 -- given a term with boolean sort, transform it into a goal clause in hohc format
