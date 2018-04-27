@@ -1,0 +1,14 @@
+environment
+make_array : int->int->int->bool
+z : int -> bool
+p : (int->bool)->int->bool
+array_max : int->(int->bool)->(int->int->bool)->int->bool;
+
+program
+n = i + r => make_array n i r
+r=0 => z r
+E i:int. x i ^ x=r+1 => p x r
+(E x : int . (E z:int.array_max n (p i) a z)) => array_max n i a m;
+
+goal
+E n,i,m:int. array_max n i (make_array n) 1
