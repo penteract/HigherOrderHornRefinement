@@ -22,10 +22,10 @@ goal
 E m,n,r:int. m>=0 ^ n>=0 ^ ack m n r ^ r < n
 
    After Transformation
-x_11 = 0 ^ x_13 = x_12 + 1 \/ x_11 > 0 ^ x_12 = 0 ^ x_6 x_13 1 (x_11 - 1) \/ x_11 > 0 ^ x_12 > 0 ^ (E x_10:int.x_6 x_10 (x_12 - 1) x_11 ^ x_6 x_13 x_10 (x_11 - 1)) => x_6 x_13 x_12 x_11
+x_11 = 0 && x_13 = x_12 + 1 || x_11 > 0 && x_12 = 0 && x_6 x_13 1 (x_11 - 1) || x_11 > 0 && x_12 > 0 && (E x_10:int. x_6 x_10 (x_12 - 1) x_11 && x_6 x_13 x_10 (x_11 - 1)) => x_6 x_13 x_12 x_11
 
 goal:
-E x_14:int.E x_15:int.E x_16:int.x_14 >= 0 ^ x_15 >= 0 ^ x_6 x_16 x_15 x_14 ^ x_16 < x_15
+E x_14:int. E x_15:int. E x_16:int. x_14 >= 0 && x_15 >= 0 && x_6 x_16 x_15 x_14 && x_16 < x_15
 
 
    Z3 result
@@ -46,7 +46,7 @@ let rec array_max (n:int) i (a:int->int) m =
 let main n i =
   if n>0 && i>=0 && i<=0 then
     let m = array_max n i (make_array n) (-1) in
-    assert (m >= n)
+    assert (m >= n+1)
 
    Equivalent higher-order Horn clause problem
 environment
@@ -59,16 +59,16 @@ i>=n ^ r = m => array_max n i a m r
 i<n ^ (E x : int.a i x ^ (E z:int.((x>m ^ z=x)\/(x<=m ^ z=m)) ^(E w:int. w=i+1 ^ array_max n w a z r))) => array_max n i a m r;
 
 goal
-E n,m,i,x:int.i=0 ^ x=0-1 ^ n>0 ^ array_max n i (make_array n) x m ^ m+1<n
+E n,m,i,x:int.i=0 ^ x=0-1 ^ n>0 ^ array_max n i (make_array n) x m ^ m<n+1
 
    After Transformation
 x_11 x_50 x_49 x_45 => x_16 x_50 x_49 x_47 x_45
-x_40 >= x_39 ^ x_44 = x_43 \/ x_40 < x_39 ^ (E x_31:int.x_16 x_31 x_40 x_40 x_39 ^ E x_32:int.(x_31 > x_43 ^ x_32 = x_31 \/ x_31 <= x_43 ^ x_32 = x_43) ^ E x_33:int.x_33 = x_40 + 1 ^ x_19 x_44 x_32 x_33 x_39) => x_19 x_44 x_43 x_40 x_39
+x_40 >= x_39 && x_44 = x_43 || x_40 < x_39 && (E x_31:int. x_16 x_31 x_40 x_40 x_39 && E x_32:int. (x_31 > x_43 && x_32 = x_31 || x_31 <= x_43 && x_32 = x_43) && E x_33:int. x_33 = x_40 + 1 && x_19 x_44 x_32 x_33 x_39) => x_19 x_44 x_43 x_40 x_39
 x_16 x_35 x_34 x_24 x_23 => x_16 x_35 x_34 x_33 x_23
 x_36 = x_37 + x_38 => x_11 x_38 x_37 x_36
 
 goal:
-E x_45:int.E x_46:int.E x_47:int.E x_48:int.x_47 = 0 ^ x_48 = 0 - 1 ^ x_45 > 0 ^ x_19 x_46 x_48 x_47 x_45 ^ x_46 + 1 < x_45
+E x_45:int. E x_46:int. E x_47:int. E x_48:int. x_47 = 0 && x_48 = 0 - 1 && x_45 > 0 && x_19 x_46 x_48 x_47 x_45 && x_46 < x_45 + 1
 
 
    Z3 result
@@ -106,12 +106,12 @@ E n,m,i,x:int.i=0 ^ x=0-1 ^ n>0 ^ array_max n i (make_array n) x m ^ m<n
 
    After Transformation
 x_11 x_50 x_49 x_45 => x_16 x_50 x_49 x_47 x_45
-x_40 >= x_39 ^ x_44 = x_43 \/ x_40 < x_39 ^ (E x_31:int.x_16 x_31 x_40 x_40 x_39 ^ E x_32:int.(x_31 > x_43 ^ x_32 = x_31 \/ x_31 <= x_43 ^ x_32 = x_43) ^ E x_33:int.x_33 = x_40 + 1 ^ x_19 x_44 x_32 x_33 x_39) => x_19 x_44 x_43 x_40 x_39
+x_40 >= x_39 && x_44 = x_43 || x_40 < x_39 && (E x_31:int. x_16 x_31 x_40 x_40 x_39 && E x_32:int. (x_31 > x_43 && x_32 = x_31 || x_31 <= x_43 && x_32 = x_43) && E x_33:int. x_33 = x_40 + 1 && x_19 x_44 x_32 x_33 x_39) => x_19 x_44 x_43 x_40 x_39
 x_16 x_35 x_34 x_24 x_23 => x_16 x_35 x_34 x_33 x_23
 x_36 = x_37 + x_38 => x_11 x_38 x_37 x_36
 
 goal:
-E x_45:int.E x_46:int.E x_47:int.E x_48:int.x_47 = 0 ^ x_48 = 0 - 1 ^ x_45 > 0 ^ x_19 x_46 x_48 x_47 x_45 ^ x_46 < x_45
+E x_45:int. E x_46:int. E x_47:int. E x_48:int. x_47 = 0 && x_48 = 0 - 1 && x_45 > 0 && x_19 x_46 x_48 x_47 x_45 && x_46 < x_45
 
 
    Z3 result
@@ -140,12 +140,12 @@ goal
    After Transformation
 x_13 x_36 x_35 => x_7 x_36 x_35
 x_32 = x_31 + 1 => x_13 x_32 x_31
-x_29 >= 0 ^ x_7 x_30 x_29 \/ x_29 < 0 ^ (E x_20:int.x_7 x_20 x_29 ^ x_10 x_30 x_20) => x_10 x_30 x_29
+x_29 >= 0 && x_7 x_30 x_29 || x_29 < 0 && (E x_20:int. x_7 x_20 x_29 && x_10 x_30 x_20) => x_10 x_30 x_29
 x_10 x_24 x_23 => x_7 x_24 x_23
 x_7 x_22 x_21 => x_7 x_22 x_21
 
 goal:
-E x_33:int.E x_34:int.x_10 x_34 x_33 ^ x_34 < 0
+E x_33:int. E x_34:int. x_10 x_34 x_33 && x_34 < 0
 
 
    Z3 result
@@ -176,11 +176,11 @@ E x,y,z,m,n:int. max f x y z m ∧ f x m n ∧ (m < n ∨ n < m)
 
    After Transformation
 x_20 x_51 x_50 x_49 => x_11 x_51 x_50 x_49
-x_41 < x_42 ^ x_43 = x_42 \/ x_42 <= x_41 ^ x_43 = x_41 => x_20 x_43 x_42 x_41
-(E x_30:int.x_11 x_30 x_38 x_37 ^ x_11 x_40 x_39 x_30) => x_16 x_40 x_39 x_38 x_37
+x_41 < x_42 && x_43 = x_42 || x_42 <= x_41 && x_43 = x_41 => x_20 x_43 x_42 x_41
+(E x_30:int. x_11 x_30 x_38 x_37 && x_11 x_40 x_39 x_30) => x_16 x_40 x_39 x_38 x_37
 
 goal:
-E x_44:int.E x_45:int.E x_46:int.E x_47:int.E x_48:int.x_16 x_47 x_46 x_45 x_44 ^ x_20 x_48 x_47 x_44 ^ (x_47 < x_48 \/ x_48 < x_47)
+E x_44:int. E x_45:int. E x_46:int. E x_47:int. E x_48:int. x_16 x_47 x_46 x_45 x_44 && x_20 x_48 x_47 x_44 && (x_47 < x_48 || x_48 < x_47)
 
 
    Z3 result
@@ -209,10 +209,10 @@ goal
 E x,y:int. x<=102 ^ (y<91 \/ y>91) ^ mc91 x y
 
    After Transformation
-x_8 > 100 ^ x_9 = x_8 - 10 \/ x_8 <= 100 ^ (E x_7:int.x_4 x_7 (x_8 + 11) ^ x_4 x_9 x_7) => x_4 x_9 x_8
+x_8 > 100 && x_9 = x_8 - 10 || x_8 <= 100 && (E x_7:int. x_4 x_7 (x_8 + 11) && x_4 x_9 x_7) => x_4 x_9 x_8
 
 goal:
-E x_10:int.E x_11:int.x_10 <= 102 ^ (x_11 < 91 \/ x_11 > 91) ^ x_4 x_11 x_10
+E x_10:int. E x_11:int. x_10 <= 102 && (x_11 < 91 || x_11 > 91) && x_4 x_11 x_10
 
 
    Z3 result
@@ -241,10 +241,10 @@ goal
 E x,y:int. x<=101 ^ (y<91 \/ y>91) ^ mc91 x y
 
    After Transformation
-x_8 > 100 ^ x_9 = x_8 - 10 \/ x_8 <= 100 ^ (E x_7:int.x_4 x_7 (x_8 + 11) ^ x_4 x_9 x_7) => x_4 x_9 x_8
+x_8 > 100 && x_9 = x_8 - 10 || x_8 <= 100 && (E x_7:int. x_4 x_7 (x_8 + 11) && x_4 x_9 x_7) => x_4 x_9 x_8
 
 goal:
-E x_10:int.E x_11:int.x_10 <= 101 ^ (x_11 < 91 \/ x_11 > 91) ^ x_4 x_11 x_10
+E x_10:int. E x_11:int. x_10 <= 101 && (x_11 < 91 || x_11 > 91) && x_4 x_11 x_10
 
 
    Z3 result
@@ -273,10 +273,10 @@ goal
 E n,r:int. n>0 ^ mult n n r ^ n+1>r;
 
    After Transformation
-(x_12 <= 0 \/ x_13 <= 0) ^ x_14 = 0 \/ x_12 > 0 ^ x_13 > 0 ^ (E x_10:int.E x_11:int.x_14 = x_10 + x_12 ^ x_11 = x_13 - 1 ^ x_6 x_10 x_11 x_12) => x_6 x_14 x_13 x_12
+(x_12 <= 0 || x_13 <= 0) && x_14 = 0 || x_12 > 0 && x_13 > 0 && (E x_10:int. E x_11:int. x_14 = x_10 + x_12 && x_11 = x_13 - 1 && x_6 x_10 x_11 x_12) => x_6 x_14 x_13 x_12
 
 goal:
-E x_15:int.E x_16:int.x_15 > 0 ^ x_6 x_16 x_15 x_15 ^ x_15 + 1 > x_16
+E x_15:int. E x_16:int. x_15 > 0 && x_6 x_16 x_15 x_15 && x_15 + 1 > x_16
 
 
    Z3 result
@@ -305,10 +305,10 @@ goal
 E n,r:int. mult n n r ^ n>r;
 
    After Transformation
-(x_12 <= 0 \/ x_13 <= 0) ^ x_14 = 0 \/ x_12 > 0 ^ x_13 > 0 ^ (E x_10:int.E x_11:int.x_14 = x_10 + x_12 ^ x_11 = x_13 - 1 ^ x_6 x_10 x_11 x_12) => x_6 x_14 x_13 x_12
+(x_12 <= 0 || x_13 <= 0) && x_14 = 0 || x_12 > 0 && x_13 > 0 && (E x_10:int. E x_11:int. x_14 = x_10 + x_12 && x_11 = x_13 - 1 && x_6 x_10 x_11 x_12) => x_6 x_14 x_13 x_12
 
 goal:
-E x_15:int.E x_16:int.x_6 x_16 x_15 x_15 ^ x_15 > x_16
+E x_15:int. E x_16:int. x_6 x_16 x_15 x_15 && x_15 > x_16
 
 
    Z3 result
@@ -348,11 +348,11 @@ E n,z:int. n>=0 ^ twice neg (g n) z ^ z<0;
 x_9 x_46 x_42 => x_14 x_46
 x_19 x_45 x_44 => x_12 x_45 x_44
 x_40 + x_41 = 0 => x_19 x_41 x_40
-(E x_30:int.E x_31:int.x_14 x_30 ^ x_12 x_31 x_30 ^ x_12 x_39 x_31) => x_16 x_39
+(E x_30:int. E x_31:int. x_14 x_30 && x_12 x_31 x_30 && x_12 x_39 x_31) => x_16 x_39
 x_34 = x_35 => x_9 x_35 x_34
 
 goal:
-E x_42:int.E x_43:int.x_42 >= 0 ^ x_16 x_43 ^ x_43 < 0
+E x_42:int. E x_43:int. x_42 >= 0 && x_16 x_43 && x_43 < 0
 
 
    Z3 result
@@ -385,12 +385,12 @@ E n,r:int. n>0 ^ repeat succ n 0 r ^ r <= n
 
    After Transformation
 x_8 x_39 x_38 => x_11 x_39 x_38
-x_33 <= 0 ^ x_35 = x_34 \/ x_33 > 0 ^ (E x_25:int.E x_26:int.x_25 = x_33 - 1 ^ x_15 x_26 x_34 x_25 ^ x_11 x_35 x_26) => x_15 x_35 x_34 x_33
+x_33 <= 0 && x_35 = x_34 || x_33 > 0 && (E x_25:int. E x_26:int. x_25 = x_33 - 1 && x_15 x_26 x_34 x_25 && x_11 x_35 x_26) => x_15 x_35 x_34 x_33
 x_11 x_28 x_27 => x_11 x_28 x_27
 x_30 = x_29 + 1 => x_8 x_30 x_29
 
 goal:
-E x_36:int.E x_37:int.x_36 > 0 ^ x_15 x_37 0 x_36 ^ x_37 <= x_36
+E x_36:int. E x_37:int. x_36 > 0 && x_15 x_37 0 x_36 && x_37 <= x_36
 
 
    Z3 result
@@ -419,10 +419,10 @@ goal
 E x,y:int. sum x y ^ x+1 > y
 
    After Transformation
-x_8 <= 0 ^ x_9 = 0 \/ x_8 > 0 ^ (E x_7:int.x_4 x_7 (x_8 - 1) ^ x_9 = x_8 + x_7) => x_4 x_9 x_8
+x_8 <= 0 && x_9 = 0 || x_8 > 0 && (E x_7:int. x_4 x_7 (x_8 - 1) && x_9 = x_8 + x_7) => x_4 x_9 x_8
 
 goal:
-E x_10:int.E x_11:int.x_4 x_11 x_10 ^ x_10 + 1 > x_11
+E x_10:int. E x_11:int. x_4 x_11 x_10 && x_10 + 1 > x_11
 
 
    Z3 result
@@ -451,10 +451,10 @@ goal
 E x,y:int. sum x y ^ x > y
 
    After Transformation
-x_8 <= 0 ^ x_9 = 0 \/ x_8 > 0 ^ (E x_7:int.x_4 x_7 (x_8 - 1) ^ x_9 = x_8 + x_7) => x_4 x_9 x_8
+x_8 <= 0 && x_9 = 0 || x_8 > 0 && (E x_7:int. x_4 x_7 (x_8 - 1) && x_9 = x_8 + x_7) => x_4 x_9 x_8
 
 goal:
-E x_10:int.E x_11:int.x_4 x_11 x_10 ^ x_10 > x_11
+E x_10:int. E x_11:int. x_4 x_11 x_10 && x_10 > x_11
 
 
    Z3 result
