@@ -53,3 +53,13 @@ executable horus
   build-depends:       base >=4.8 && <5.0, parsec >=3.1 && <3.2, HigherOrderHornClauses
   -- hs-source-dirs:
   default-language:    Haskell2010
+
+
+executable hathor
+  hs-source-dirs:      HOCHC/Reduce
+  main-is:             Main.hs
+  other-modules:       RSParser,HRSParser
+  other-extensions:    FlexibleContexts
+  build-depends:       base >=4.8 && <5.0, parsec >=3.1 && <3.2, HigherOrderHornClauses
+  -- hs-source-dirs:
+  default-language:    Haskell2010

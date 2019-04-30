@@ -6,6 +6,7 @@ dist
 *.hi
 *.exe
 *.o
+examples.tar
 cabal.sandbox.config
 .cabal-sandbox
 .stack-work

@@ -1,0 +1,12 @@
+environment
+a : (int->bool)->int->bool
+b : (int->bool)->int->bool
+c : int->bool
+S : int->bool
+F : (int->bool)->int->bool
+
+program
+c := \p_ : int. 1 = 1;
+
+goal
+E x:int . x=0 && c x

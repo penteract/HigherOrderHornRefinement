@@ -13,21 +13,24 @@ import HOCHC.Utils
 --import FormulaChecks(typeCheck)
 import Data.Maybe(fromJust)
 import Control.Monad(liftM,liftM2)
-import Control.Monad.Except(throwError,lift)
-import Data.Bifunctor
+import Control.Monad.Except(throwError,lift,MonadError)
+import Data.Semigroup
+-- import Data.Bifunctor
 import Data.List(partition)
 
 import Control.Monad.Reader
-import Control.Monad.Writer
-import Control.Monad.Except
+import Control.Monad.Writer hiding ((<>))
 
 --import Data.Monoid (Monoid, mempty, mappend, (<>))
 --newtype ModTerm = MT (Term -> Term)
 --instance Monoid ModTerm
 
+instance {-# OVERLAPPING #-} Semigroup (a -> a) where
+    f <> g = f . g
+
 instance {-# OVERLAPPING #-} Monoid (a -> a) where
     mempty = id
-    mappend f g = f . g
+    mappend = (<>)
 
 
 -- Fresh variables, a frozen environment, and a modifier that keeps track of
@@ -74,8 +77,10 @@ getSort (Variable v) = do
      ms <- reader (lookup v)
      maybe (throwError ("Can't find sort of variable "++v)) return ms
 getSort (Apply s t) = do --does not check t and assumes it just works
-    (Arrow a b) <- getSort s--unsafe
-    return b
+    sigma <- getSort s--unsafe
+    case sigma of
+        (Arrow a b) -> return b
+        _ -> throwError "Bad sort"
 getSort (Constant c) =do
     if isIntegerConstant c
     then return Int

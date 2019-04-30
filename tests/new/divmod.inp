@@ -1,0 +1,8 @@
+environment
+mod : int->int->int->bool
+
+program
+x>=0 && x<y && r=x || E z k. (z=x-y && mod z y k && r=k) => mod x y r
+
+goal
+E n m. mod n m>=m

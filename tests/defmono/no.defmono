@@ -1,0 +1,14 @@
+environment
+f : (int->bool)->(int->bool)->int->bool
+g : (int->bool)->int->bool
+a : int->bool
+S : int->bool
+
+program
+S := \p_ : int. f (g a) a p_;
+f := \w_1 : int->bool. \w_2 : int->bool. \p_ : int.  1 = 1 ;
+g := \w_1 : int->bool. \p_ : int. 1 = 0;
+a := \p_ : int. 1 = 0;
+
+goal
+S 1

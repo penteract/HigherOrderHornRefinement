@@ -4,7 +4,7 @@ In particular, this includes functions for producing SMT-LIB output that can be 
 -}
 
 module HOCHC.Printing(printOut,pprint,printInd,smtPrint,smtPrint2,printEnv,printLog,
-    deand) where
+    deand,printLong) where
 
 import Data.List
 import HOCHC.DataTypes
@@ -130,4 +130,6 @@ printEnv ((v,s):d) = v++" : "++prns s++"\n"++ printEnv d
 removeNeq :: Term -> Term
 removeNeq (Apply (Apply (Constant "≠") a) b) = let app2 c = (Apply (Apply (Constant c) a) b) in
     aor  (app2 "<") (app2 ">")
+removeNeq (Constant "false") = aequals (Constant "1") (Constant "0")
+removeNeq (Constant "true") = aequals (Constant "1") (Constant "1")
 removeNeq t = appdown removeNeq t

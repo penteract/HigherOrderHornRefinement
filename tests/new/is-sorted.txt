@@ -1,0 +1,20 @@
+environment
+make_array: int -> int -> int -> bool
+isNotSorted: int -> (int -> int -> bool) -> int -> int -> bool
+
+program
+# make_array creates a function that, given an index i, returns element r at index i. Here, n is the length of the list. 
+# In this list, we have r = i. 
+# Hence, the list is sorted in ascending order. 
+make_array := \n: int. \i: int. \r: int. r = i && 0 <= i && i < n;
+
+# isNotSorted returns true if an input list is not sorted.
+# max is the length of the input list.
+# f is the function that represents an input list.
+# pre is the baseline number which is compared with the head of the list. 'pre' is initialized to 0 in the first call of isNotSorted, provided that all elements in the list are natural numbers.
+# i is the index we are currently at. 
+isNotSorted := \max: int. \f: (int -> int -> bool). \pre: int. \i: int. (i < max && E a: int. f i a && (pre > a || isNotSorted max f a (i+1)));
+
+goal
+#E n: int. isNotSorted n (make_array n) 0 0
+isNotSorted 10 (make_array 10) 0 0

@@ -1,0 +1,16 @@
+environment
+a : (int->bool)->(int->bool)->int->bool
+b : (int->bool)->int->bool
+c : int->bool
+S : int->bool
+F : (int->bool)->int->bool
+
+program
+S := \p_ : int. F c p_;
+F := \x : int->bool. \p_ : int. a x (F (b (a x x))) p_;
+a := \w_1 : int->bool. \w_2 : int->bool. \p_ : int. E one:int. E zero:int.  one=1 && zero=0 && (1 = 0 || p_ = 1 || (1 = 0 || (1 = 0 || p_ = 0 || p_ = 1) && w_1 zero || (1 = 0 || p_ = 0 || p_ = 1) && w_2 zero));
+b := \w_1 : int->bool. \p_ : int. E one:int. E zero:int.  one=1 && zero=0 && (1 = 0 || (1 = 0 || (1 = 0 || p_ = 0) && w_1 one || (1 = 0 || p_ = 1) && w_1 one));
+c := \p_ : int. 1 = 0 || 1 = 0;
+
+goal
+E zero:int .zero=0 && S zero

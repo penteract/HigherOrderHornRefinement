@@ -6,7 +6,7 @@ import System.Console.GetOpt
 --import Control.Monad.Except
 
 import HOCHC.DataTypes
---import Data.Maybe(fromJust)
+import Data.Maybe(isJust,isNothing,fromMaybe,fromJust)
 import Data.List
 --import Data.Char(toLower)
 import Control.Arrow--(second)
@@ -27,13 +27,26 @@ import HOCHC.Simplify
 import HOCHC.Translate
 import HOCHC.TypeCheck
 import HOCHC.FormulaChecks
-import ProgParser(parseFile)
+import HRSParser--(parseFile,HO)
 --import Utils
 import HOCHC.Printing
 
 type HOP = (DeltaEnv,Term,Term) --higher order problem
 type FOP = (DeltaEnv,Gamma,Term,Term) --first order problem
 type OptTy = Opt HOP (Opt FOP Bool)
+
+--defaultOpts' = defaultOpts (\ (x,_) ->Right (printa x)) ()
+
+
+
+runHorus :: HOP -> Either String FOP
+runHorus (delta, dd', goal') = runFresh (do -- Mfresh monad (fresh vars + Exceptions)
+        (goal:dd) <- mapM elim (goal':deand dd')
+        prog <- (transformProg delta dd)
+        (d2,g,c1) <- inferProg delta prog
+        (d3,c2,BoolT s) <- infer g goal
+        return (d2++d3,g,(aand c1 c2),s)
+        )
 
 horusDefault = (defaultOpts (\((d,g,t,goalt),_)->(Right$ unlines $
   [printOut t,"","goal:",show goalt])) False)
@@ -86,26 +99,71 @@ refinementoptions = [Option ['l'] ["long"]
         "Output in extended SMT-LIB format for Z3"
     ]
 
+
+
+
 usage = mkUsage options (\n-> unlines
     ["Usage: "++n++" [INPUT [OUTPUT]]",
-     "Given a system of higher order horn clauses, output a system of first order horn clauses",
-     "If the resulting clauses are satifiable, then the input was",
-     "If filenames are not given, uses standard input/output",
+     "Given a HOMCP, output a system of higher order horn clauses",
      ""])
+
+pvar = Variable "p_"
+ctrue = Constant "true"
+cfalse = Constant "false"
+
+sharp Int = Arrow Int Bool
+sharp (Arrow a b) = Arrow (sharp a) (sharp b)
+
+ors :: [Term] -> Term
+ors = foldl aor cfalse
+ands :: [Term] -> Term
+ands = foldl aor ctrue
+
+vars = map (Variable.("w_"++).show) [1..]
+
+terminalClause :: AState -> Automaton -> [AState] -> Int -> Term
+terminalClause a d qs n =
+    aimplies (
+        ors$[aequals pvar (getC q) | q<-qs , isNothing (d q a) ]
+            ++ [ (ors (aequals pvar (getC q) : [aequals pvar (getC q) | q<-qs , isNothing (d q a)]))
+              `aand`
+            (Apply x (getC q')) | q <- qs, (x,q') <- zip vars (fromMaybe []$ d q a)]
+        )
+        (foldl Apply (Variable a) ( take n vars++[pvar]))
+    where getC = Constant .show.fromJust.flip elemIndex qs
+
+convert :: HOMCP -> Either String HOP
+convert ((ts,nts,rs),d,qs) = do
+    let env = [ (sym,sharp ty) | (sym,ty) <- ts++nts]
+    let clauses = map (\ (h,cs,t) -> aimplies (Apply t pvar)
+                                    (foldl Apply (Variable h) (map Variable $ cs++["p_"])))
+                    rs
+    -- maybe (Left "err") Right (lookup a ts)
+    let tClauses = [terminalClause a d qs (arity s) | (a,s) <- ts]
+    let goal = Apply (Variable "S") (Constant "0")
+    return (env,foldr1 aand (clauses++tClauses), goal)
+
+
+arity Bool = 0
+arity Int = 0
+arity (Arrow a b) = 1 + arity b
 
 main :: IO ()
 main = mkMain usage defaultOpts' options run
 
-run :: String -> String -> Either String (DeltaEnv,Term,Term)
+run :: String -> String -> Either String HOP
 run fname programText = do --Either Monad
-        defns <- parseFile fname programText
+        homcp <- parseFile fname programText
+        convert homcp
+
+        {-
         d' <- typeCheck defns
         let (delta',mains) = partition ((/="main").fst) d'--duplicated effort
         delta <- mapM (runKleisli$ second (Kleisli rhoify)) delta'
         (prog,goal) <- runFresh (transform (delta++mains) defns)
-        return (delta,prog,goal)
+        return (delta,prog,goal)-}
 
-
+{-
 runHorus :: HOP -> Either String FOP
 runHorus (delta, dd', goal') = runFresh (do -- Mfresh monad (fresh vars + Exceptions)
         (goal:dd) <- mapM elim (goal':deand dd')
@@ -113,4 +171,4 @@ runHorus (delta, dd', goal') = runFresh (do -- Mfresh monad (fresh vars + Except
         (d2,g,c1) <- inferProg delta prog
         (d3,c2,BoolT s) <- infer g goal
         return (d2++d3,g,(aand c1 c2),s)
-        )
+        )-}

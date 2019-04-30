@@ -84,8 +84,8 @@ oneOf (s:ss) = tok s <|> oneOf ss
 opPrecl :: [[String]] -> MyParser Term -> MyParser Term
 opPrecl [] p = p
 opPrecl (ss:rest) p = chainl1 (opPrecl rest p)
-                                 (do op <- (oneOf ss <?> "operator")
-                                     return (\ a b -> Apply (Apply (Constant op) a) b))
+                              (do op <- (oneOf ss <?> "operator")
+                                  return (\ a b -> Apply (Apply (Constant op) a) b))
 
 
 parens :: MyParser a -> MyParser a

@@ -1,12 +1,17 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts,FlexibleInstances #-}
 
 {-
 Some functions that are used across the program
 -}
 
+
 module HOCHC.Utils((%),errorPart,fromRight,xor,(>><),check,(?),throwError)
     where
 import Control.Monad.Except
+import qualified Control.Monad.Fail
+
+instance Control.Monad.Fail.MonadFail (Either String) where
+    fail s = Left s
 
 -- helper function for constructing strings nicely
 (%) :: String -> [String] -> String
